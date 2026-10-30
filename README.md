@@ -74,7 +74,8 @@ const { model } = readPresentationFile(fs.readFileSync("Example.pro"));
 const { findings } = checkFile(fs.readFileSync("Example.probundle"));
 ```
 
-Node 20 or later. `npm test` runs the tests; `npm run fixtures` rebuilds the fixtures.
+Node 20 or later. `npm test` runs the tests; `npm run fixtures` rebuilds the fixtures. The fixtures ship
+with the package (`test/fixtures/`), so a project using it can test against the same invented show.
 
 ## Licence
 
