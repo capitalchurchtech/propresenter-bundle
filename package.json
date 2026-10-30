@@ -1,0 +1,50 @@
+{
+  "name": "propresenter-bundle",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Read, check and edit ProPresenter 7 presentations and bundles (.pro, .probundle). Unofficial.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./runs": {
+      "types": "./src/runs.d.ts",
+      "default": "./src/runs.js"
+    },
+    "./geometry": {
+      "types": "./src/geometry.d.ts",
+      "default": "./src/geometry.js"
+    },
+    "./metrics": {
+      "types": "./src/metrics.d.ts",
+      "default": "./src/metrics.js"
+    },
+    "./script": {
+      "default": "./src/script/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "proto",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "fixtures": "node scripts/make-fixtures.js"
+  },
+  "dependencies": {
+    "jszip": "^3.10.2",
+    "protobufjs": "^7.6.6"
+  }
+}

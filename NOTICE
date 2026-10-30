@@ -1,0 +1,58 @@
+propresenter-bundle includes work by others, under their own licences.
+
+1. The ProPresenter schema
+
+   proto/ is the community schema from https://github.com/greyshirtguy/ProPresenter7-Proto
+   ("Proto 19beta", dumped from ProPresenter 19 beta), copied without change. MIT licence,
+   Copyright (c) 2023 greyshirtguy; the full text is in proto/LICENSE.
+
+   src/proto.json is that schema compiled, with two fields added by this package, which the
+   community schema leaves unnamed:
+     - rv.data.Graphics.Text.Attributes.CustomAttribute field 12 (_unknown_12): each run of
+       text's font
+     - rv.data.Media.Metadata field 6 (_unknown_6)
+   Those two additions are this package's own, under its MIT licence (LICENSE).
+
+2. Format research by others
+
+   While the file format was being worked out, earlier versions of this work consulted these
+   projects. A comparison of their code with this package's found nothing copied (the only shared
+   text is ProPresenter's own RTF header and the schema's field names). They are named here as
+   credit:
+     - https://github.com/davbeck/pro-crud (MIT, Copyright (c) 2026 David Beck)
+     - https://github.com/rainman80s/propresenter-claude-skill (MIT)
+     - https://github.com/cgarwood/propresenter-presentation-builder
+
+3. Google's protobuf types
+
+   src/proto.json also contains Google's standard protobuf types (google.protobuf: the
+   descriptor and wrapper types the schema imports), compiled from the copies bundled with
+   protobufjs. They carry this notice:
+
+   Copyright 2014, Google Inc.  All rights reserved.
+
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are
+   met:
+
+       * Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+       * Redistributions in binary form must reproduce the above
+   copyright notice, this list of conditions and the following disclaimer
+   in the documentation and/or other materials provided with the
+   distribution.
+       * Neither the name of Google Inc. nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

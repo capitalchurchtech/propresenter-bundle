@@ -1,0 +1,32 @@
+{
+ "key": "example-show",
+ "label": "Example Show",
+ "palette": [
+  "#0177cc",
+  "#cc014e",
+  "#23b44c"
+ ],
+ "reset": true,
+ "video": true,
+ "cueStyle": "soundboard",
+ "noteAdvanceSeconds": 1,
+ "lineLimit": 190,
+ "titleLabel": "Title Slide",
+ "titleGroup": "Title",
+ "titleExtras": [
+  "Welcome",
+  "Intermission",
+  "Close"
+ ],
+ "workspace": "/Users/example/Library/Application Support/RenewedVision/ProPresenter/UserWorkspaces/Example",
+ "masters": {
+  "speaker": "00000000-0000-4000-8000-000000001003",
+  "note": "00000000-0000-4000-8000-000000001006",
+  "picture": "00000000-0000-4000-8000-00000000100B",
+  "background": "00000000-0000-4000-8000-000000001010",
+  "lights": "00000000-0000-4000-8000-000000001013",
+  "audio": "00000000-0000-4000-8000-000000001018",
+  "video": "00000000-0000-4000-8000-00000000101C",
+  "reset": "00000000-0000-4000-8000-00000000101F"
+ }
+}
