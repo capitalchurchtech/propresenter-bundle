@@ -39,6 +39,8 @@ to say which files it reads.
 - **Linked boxes.** A box can take its words, colour, picture or visibility from elsewhere: the slide's
   label, a timer, the clock, another slide. `linksOf` names each link in plain words, and a box linked to
   its own slide's label reads as the label (`showsOwnLabel`), since that is what ProPresenter shows.
+- **Read a playlist file** (`readPlaylistFile`, `.proplaylist`): its playlists, each item's kind, file and
+  arrangement name, and the presentations and media it carries. Read only; not yet tried on a real one.
 - **Read a workspace** (`readWorkspacePart`), read only: macros and their collections, Looks and screens,
   labels, groups, props, messages, timers, stage layouts, clear groups, and the playlist library as a tree.
   These are the files in a workspace's `Configuration` and `Playlists` folders; ProPresenter's database is
