@@ -1,4 +1,4 @@
-// propresenter-bundle (working name): read, check and edit ProPresenter 7 files (.pro, .probundle).
+// propresenter-bundle: read, check and edit ProPresenter 7 files (.pro, .probundle, .protheme).
 // Unofficial; see README.md.
 export { readBundle, writeBundle, isZip } from "./bundle.js";
 export { markdownRuns, linkRuns } from "./runs.js";
@@ -10,8 +10,12 @@ export { createGeometry, englishBreaks, linePitch, BOX_PAD, LINE_PADDING } from 
 export { createRoles, defaultRoleRules } from "./roles.js";
 export {
   uuid, freshCopy, rtfSize, textOf, setText, mediaUrl, setImage, ELEMENT_NAMES, STACK, tidyElements,
-  fitSpeakerBox, roleFor, repointBackgrounds, tidyActions,
+  fitSpeakerBox, roleFor, repointBackgrounds, tidyActions, elementsOf, renameElement,
 } from "./elements.js";
-export { openFile, toModel, mediaFilesOf, readPresentationFile } from "./model.js";
+export { openFile, toModel, mediaFilesOf, readPresentationFile, linksOf, showsOwnLabel } from "./model.js";
+export { WORKSPACE_PARTS, readWorkspacePart } from "./workspace.js";
+export { mediaInfo, mediaObject, mediaAction, mediaBox, workspaceOf, mediaEntryName } from "./media.js";
+export { parseColor, setTextColor, setAlignment, setVerticalAlignment, setTextFit, setCapitals, setFont, setBoxStyle, arrangeBox } from "./format.js";
+export { openTheme, decodeTheme, encodeTheme, checkThemeBytes, themeModel, readThemeFile, writeTheme } from "./theme.js";
 export { diffModels } from "./diff.js";
 export { checkFile } from "./check.js";

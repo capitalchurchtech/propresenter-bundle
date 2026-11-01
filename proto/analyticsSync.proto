@@ -21,3 +21,17 @@ message Local {
   bool replace_files = 7;
 }
 
+message WebSocketConnectionFailed {
+  .rv.analytics.sync.WebSocketFailureReason reason = 1;
+  string url = 2;
+  string error_description = 3;
+}
+
+enum WebSocketFailureReason {
+  UNKNOWN = 0;
+  AUTHENTICATION = 1;
+  TIMEOUT = 2;
+  NO_INTERNET = 3;
+  SERVER_ERROR = 4;
+}
+

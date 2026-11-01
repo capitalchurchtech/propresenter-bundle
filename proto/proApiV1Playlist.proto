@@ -11,6 +11,8 @@ import "proApiV1Color.proto";
 import "proApiV1ContentType.proto";
 import "proApiV1Identifier.proto";
 import "proApiV1PresentationPlaylistItem.proto";
+import "proApiV1Presentation.proto";
+import "proApiV1TimelineOperation.proto";
 
 message API_v1_Playlist {
   enum API_v1_PlaylistType {
@@ -26,6 +28,7 @@ message API_v1_Playlist {
 message API_v1_PlaylistAndItem {
   .rv.data.API_v1_Identifier playlist = 1;
   .rv.data.API_v1_Identifier item = 2;
+  .rv.data.API_v1_PlaylistItem playlist_item = 3;
 }
 
 message API_v1_PlaylistItem {
@@ -45,6 +48,8 @@ message API_v1_PlaylistItem {
   .rv.data.API_v1_Color header_color = 5;
   .google.protobuf.UInt32Value duration = 6;
   .rv.data.API_v1_PlaylistPresentationItem presentation_info = 7;
+  string target_uuid = 8;
+  .rv.data.API_v1_Presentation.Destination destination = 9;
 }
 
 message API_v1_Playlist_Request {
@@ -81,6 +86,14 @@ message API_v1_Playlist_Request {
     .rv.data.API_v1_ContentType content_type = 4;
   }
 
+  message IdThumbnail {
+    string id = 1;
+    uint32 index = 2;
+    uint32 cue_index = 3;
+    int32 quality = 4;
+    .rv.data.API_v1_ContentType content_type = 5;
+  }
+
   message EmptyMessage {
   }
 
@@ -89,6 +102,31 @@ message API_v1_Playlist_Request {
   }
 
   message IndexMessage {
+    uint32 index = 1;
+    uint32 cue_index = 2;
+  }
+
+  message TimelineOperation {
+    string id = 1;
+    uint32 index = 2;
+    .rv.data.API_v1_TimelineOperation operation = 3;
+  }
+
+  message ActivePlaylistTimelineOperation {
+    uint32 index = 1;
+    .rv.data.API_v1_TimelineOperation operation = 2;
+  }
+
+  message FocusedPlaylistTimelineOperation {
+    uint32 index = 1;
+    .rv.data.API_v1_TimelineOperation operation = 2;
+  }
+
+  message ActivePlaylistTimelineStatus {
+    uint32 index = 1;
+  }
+
+  message FocusedPlaylistTimelineStatus {
     uint32 index = 1;
   }
 
@@ -123,6 +161,16 @@ message API_v1_Playlist_Request {
     .rv.data.API_v1_Playlist_Request.IdMessage id_updates = 28;
     .rv.data.API_v1_Playlist_Request.Thumbnail active_presentation_thumbnail = 29;
     .rv.data.API_v1_Playlist_Request.Thumbnail active_announcement_thumbnail = 30;
+    .rv.data.API_v1_Playlist_Request.EmptyMessage focused_next = 31;
+    .rv.data.API_v1_Playlist_Request.EmptyMessage focused_previous = 32;
+    .rv.data.API_v1_Playlist_Request.IdThumbnail id_thumbnail = 33;
+    .rv.data.API_v1_Playlist_Request.TimelineOperation timeline_operation = 34;
+    .rv.data.API_v1_Playlist_Request.ActivePlaylistTimelineOperation active_playlist_presentation_timeline_operation = 35;
+    .rv.data.API_v1_Playlist_Request.ActivePlaylistTimelineOperation active_playlist_announcement_timeline_operation = 36;
+    .rv.data.API_v1_Playlist_Request.FocusedPlaylistTimelineOperation focused_playlist_timeline_operation = 37;
+    .rv.data.API_v1_Playlist_Request.ActivePlaylistTimelineStatus active_playlist_presentation_timeline_status = 38;
+    .rv.data.API_v1_Playlist_Request.ActivePlaylistTimelineStatus active_playlist_announcement_timeline_status = 39;
+    .rv.data.API_v1_Playlist_Request.FocusedPlaylistTimelineStatus focused_playlist_timeline_status = 40;
   }
 }
 
@@ -156,12 +204,35 @@ message API_v1_Playlist_Response {
     .rv.data.API_v1_PlaylistAndItem playlist = 1;
   }
 
+  message GetProximalPlaylistItem {
+    .rv.data.API_v1_Identifier item = 1;
+  }
+
   message Thumbnail {
     bytes data = 1;
     .rv.data.API_v1_ContentType content_type = 2;
   }
 
   message EmptyMessage {
+  }
+
+  message TimelineOperation {
+  }
+
+  message ActivePlaylistTimelineOperation {
+  }
+
+  message FocusedPlaylistTimelineOperation {
+  }
+
+  message ActivePlaylistTimelineStatus {
+    bool is_running = 1;
+    double current_time = 2;
+  }
+
+  message FocusedPlaylistTimelineStatus {
+    bool is_running = 1;
+    double current_time = 2;
   }
 
   oneof Response {
@@ -195,6 +266,16 @@ message API_v1_Playlist_Response {
     .rv.data.API_v1_Playlist_Response.EmptyMessage id_updates = 28;
     .rv.data.API_v1_Playlist_Response.Thumbnail active_presentation_thumbnail = 29;
     .rv.data.API_v1_Playlist_Response.Thumbnail active_announcement_thumbnail = 30;
+    .rv.data.API_v1_Playlist_Response.GetProximalPlaylistItem focused_next = 31;
+    .rv.data.API_v1_Playlist_Response.GetProximalPlaylistItem focused_previous = 32;
+    .rv.data.API_v1_Playlist_Response.Thumbnail id_thumbnail = 33;
+    .rv.data.API_v1_Playlist_Response.TimelineOperation timeline_operation = 34;
+    .rv.data.API_v1_Playlist_Response.ActivePlaylistTimelineOperation active_playlist_presentation_timeline_operation = 35;
+    .rv.data.API_v1_Playlist_Response.ActivePlaylistTimelineOperation active_playlist_announcement_timeline_operation = 36;
+    .rv.data.API_v1_Playlist_Response.FocusedPlaylistTimelineOperation focused_playlist_timeline_operation = 37;
+    .rv.data.API_v1_Playlist_Response.ActivePlaylistTimelineStatus active_playlist_presentation_timeline_status = 38;
+    .rv.data.API_v1_Playlist_Response.ActivePlaylistTimelineStatus active_playlist_announcement_timeline_status = 39;
+    .rv.data.API_v1_Playlist_Response.FocusedPlaylistTimelineStatus focused_playlist_timeline_status = 40;
   }
 }
 

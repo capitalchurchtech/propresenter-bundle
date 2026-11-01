@@ -7,6 +7,7 @@ option csharp_namespace = "Pro.SerializationInterop.RVProtoData";
 option swift_prefix = "RVData_";
 
 import "color.proto";
+import "customOptions.proto";
 import "effects.proto";
 import "hotKey.proto";
 import "uuid.proto";

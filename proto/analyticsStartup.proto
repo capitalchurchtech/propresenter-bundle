@@ -65,6 +65,7 @@ message Output {
   int32 height = 7;
   .rv.analytics.startup.Output.AlphaKeyMode alpha_key_mode = 8;
   .rv.analytics.startup.Output.AlphaDevice alpha_device = 9;
+  bool is_disabled = 10;
 }
 
 message Single {
@@ -134,6 +135,7 @@ message Screens {
 
 message SongSelect {
   bool logged_in = 1;
+  bool auto_reporting_enabled = 2;
 }
 
 message Content {
@@ -212,6 +214,11 @@ message DiskUsage {
   uint64 bytes_of_media_asset_files = 2;
   uint64 number_of_media_asset_files = 3;
   uint64 bytes_of_unmanaged_media_asset_files = 4;
+}
+
+message LibraryUsage {
+  uint64 number_of_presentations = 1;
+  uint64 bytes_of_presentations = 2;
 }
 
 message Interface {

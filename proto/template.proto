@@ -8,6 +8,7 @@ option swift_prefix = "RVData_";
 
 import "action.proto";
 import "applicationInfo.proto";
+import "customOptions.proto";
 import "slide.proto";
 
 message Template {

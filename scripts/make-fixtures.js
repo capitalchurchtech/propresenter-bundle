@@ -7,6 +7,7 @@
 //                       a macro, a background, and one field the schema does not know
 //   sample-fixed.pro    the same after a pretend operator's hand fixes, for the diff test
 //   sample.probundle    sample.pro and its media, with one picture left out
+//   sample.protheme     a theme with two theme slides, untidy box names, and its picture in Assets
 //   dot.png             a 2x2 picture the slides point at
 //   show-template.pro   a show template for the script builder: one master of each kind a booth builds,
 //                       with its macros by id
@@ -112,6 +113,39 @@ function png(r, g, b) {
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", zlib.deflateSync(Buffer.concat([row, row]), { level: 9 })), chunk("IEND", Buffer.alloc(0))]);
 }
 
+/** A fixed timestamp inside a zip, so the bytes do not change from run to run. */
+function fixedTimes(zip) {
+  for (let p = 0; p + 30 <= zip.length;) {
+    const sig = zip.readUInt32LE(p);
+    if (sig === 0x04034b50) { zip.writeUInt32LE(0x5b210000, p + 10); p += 30 + zip.readUInt16LE(p + 26) + zip.readUInt16LE(p + 28) + zip.readUInt32LE(p + 18); }
+    else if (sig === 0x02014b50) { zip.writeUInt32LE(0x5b210000, p + 12); p += 46 + zip.readUInt16LE(p + 28) + zip.readUInt16LE(p + 30) + zip.readUInt16LE(p + 32); }
+    else break;
+  }
+  return zip;
+}
+
+// A theme, the way ProPresenter exports one: <name>/Theme beside <name>/Assets/. Two theme slides with the
+// untidy box names real themes collect ("Text" twice, a box named after the words it once held), and a
+// background picture in the theme's own Assets.
+function theme() {
+  n = 0x2000;
+  const assets = "/Users/example/Library/Application Support/RenewedVision/ProPresenter/Themes/Example Theme/Assets";
+  const bg = { element: { uuid: id(), name: "Background", bounds: { origin: { x: 0, y: 0 }, size: { width: 1920, height: 1080 } }, fill: { enable: true, media: { uuid: id(), url: { absolute_string: "file://" + encodeURI(`${assets}/example-bg.png`), platform: 1 }, image: { drawing: { natural_size: { width: 2, height: 2 } } } } } } };
+  const slide = (name, elements) => ({ name, base_slide: { uuid: id(), size: { width: 1920, height: 1080 }, elements } });
+  const doc = {
+    application_info: { platform: 1, application: 1 },
+    slides: [
+      slide("Verse", [bg, text("Text", "HelveticaNeue", "Helvetica Neue", 60, "Verse words", [160, 300, 1600, 400]), text("Text", "HelveticaNeue-Light", "Helvetica Neue", 40, "Reference", [160, 760, 800, 60])]),
+      slide("Quote", [text("Every good thing takes time", "Georgia-Italic", "Georgia", 70, "Quote words", [160, 300, 1600, 400])]),
+    ],
+  };
+  const { ThemeDocument } = loadSchema();
+  return [
+    { name: "Example Theme/Theme", data: Buffer.from(ThemeDocument.encode(ThemeDocument.fromObject(doc)).finish()) },
+    { name: "Example Theme/Assets/example-bg.png", data: png(10, 20, 30) },
+  ];
+}
+
 // A show's template for the script builder: one master of each kind a booth builds (speaker, Scene Notes,
 // picture, background, lights, sound, video, reset), with the two macros by id, and a recipe naming them.
 function showTemplate() {
@@ -164,12 +198,6 @@ const bundle = await writeBundle([
   { name: `${WORKSPACE}/Media/Assets/example-qr.png`, data: dot },
   { name: `${WORKSPACE}/Media/Assets/example-bg.png`, data: png(10, 20, 30) },
 ]);
-// A fixed timestamp inside the zip, so the bytes do not change from run to run.
-for (let p = 0; p + 30 <= bundle.length;) {
-  const sig = bundle.readUInt32LE(p);
-  if (sig === 0x04034b50) { bundle.writeUInt32LE(0x5b210000, p + 10); p += 30 + bundle.readUInt16LE(p + 26) + bundle.readUInt16LE(p + 28) + bundle.readUInt32LE(p + 18); }
-  else if (sig === 0x02014b50) { bundle.writeUInt32LE(0x5b210000, p + 12); p += 46 + bundle.readUInt16LE(p + 28) + bundle.readUInt16LE(p + 30) + bundle.readUInt16LE(p + 32); }
-  else break;
-}
-fs.writeFileSync(path.join(OUT, "sample.probundle"), bundle);
+fs.writeFileSync(path.join(OUT, "sample.probundle"), fixedTimes(bundle));
+fs.writeFileSync(path.join(OUT, "sample.protheme"), fixedTimes(await writeBundle(theme())));
 console.log(`fixtures: sample.pro ${sample.length} B, sample-fixed.pro ${fixed.length} B, sample.probundle ${bundle.length} B`);

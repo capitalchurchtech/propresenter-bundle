@@ -14,6 +14,7 @@ enum ImportType {
   SLIDES_AS_IMAGES = 0;
   TEXT_ONLY = 1;
   TEXT_AND_IMAGES = 2;
+  CORE_OPEN_XML = 3;
 }
 
 enum ImportFormat {

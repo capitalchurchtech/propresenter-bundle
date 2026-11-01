@@ -9,6 +9,7 @@ option swift_prefix = "RVData_";
 import "action.proto";
 import "alphaType.proto";
 import "ccli.proto";
+import "color.proto";
 import "cue.proto";
 import "effects.proto";
 import "graphicsData.proto";
@@ -58,6 +59,8 @@ message TriggerOptions {
   .rv.data.TriggerSource trigger_source = 10;
   .rv.data.NetworkIdentifier network_identifier = 11;
   bool request_client_context = 12;
+  bool follow_timecode = 13;
+  double timecode_offset = 14;
 }
 
 message ControlTransport {
@@ -337,6 +340,7 @@ message MacroIcons {
   message MacroIcon {
     .rv.data.MacrosDocument.Macro.ImageType image_type = 1;
     bytes image_data = 2;
+    string content_type = 3;
   }
 
   repeated .rv.data.MacroIcons.MacroIcon icons = 1;
@@ -391,6 +395,13 @@ message InputStatusCallback {
   bool enable = 1;
 }
 
+message SlideThumbnailRequest {
+  .rv.data.Cue cue = 1;
+  .rv.data.Color background = 2;
+  int32 width = 3;
+  int32 height = 4;
+}
+
 message SendData {
   int32 message_id = 1;
   oneof MessageType {
@@ -434,6 +445,7 @@ message SendData {
     .rv.data.WebFillTokenAndCookies webfill_token_and_cookies = 39;
     .rv.data.ProScoreboardWorkspace psb_workspace = 40;
     .rv.data.InputStatusCallback input_status_callback = 41;
+    .rv.data.SlideThumbnailRequest slide_thumbnail = 42;
   }
 }
 
@@ -521,6 +533,11 @@ message RequestWebFillTokenAndCookies {
 
 message MediaAssetTriggered {
   .rv.data.UUID media_uuid = 1;
+  string container_id = 2;
+}
+
+message SlideThumbnailResponse {
+  bytes data = 1;
 }
 
 message SendDataResponse {
@@ -543,6 +560,7 @@ message SendDataResponse {
     .rv.data.RequestWebFillTokenAndCookies request_webfill_token_and_cookies = 16;
     .rv.data.MediaAssetTriggered media_asset_triggered = 17;
     .rv.data.LeaveBreadcrumb leave_breadcrumb = 18;
+    .rv.data.SlideThumbnailResponse slide_thumbnail = 19;
   }
 }
 

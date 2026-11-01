@@ -65,9 +65,11 @@ export function repointBackgrounds(cue: Msg, map: Record<string, { file: string;
 export function tidyActions(cue: Msg, opts?: { macro?: Msg; dropClear?: boolean }): void;
 
 export interface ElementModel {
-  name: string; role: Role; kind: "text" | "image" | "shape" | "other";
+  uuid: string | null; name: string; role: Role; kind: "text" | "image" | "shape" | "other";
   bounds: { x: number; y: number; w: number; h: number };
-  text: string; fontName: string | null; fontSize: number | null; caps: boolean; media: string | null;
+  text: string; fontName: string | null; fontFamily: string | null; fontSize: number | null; caps: boolean; media: string | null;
+  /** What the box takes from elsewhere, in plain words: "slide label", "timer", "clock"... */
+  links: string[];
 }
 export interface SlideModel {
   uuid: string | null; label: string; enabled: boolean; text: string[]; elements: ElementModel[];
@@ -87,6 +89,30 @@ export function toModel(doc: Msg, opts?: { roles?: Roles }): PresentationModel;
 export function mediaFilesOf(cue: Msg): string[];
 export function readPresentationFile(buf: Buffer, opts?: { roles?: Roles; maxEntryBytes?: number }): { file: OpenedFile; doc: Msg; unknown: UnknownField[]; model: PresentationModel };
 
+export function elementsOf(doc: Msg): { slide: string; element: Msg; wrapper: Msg; base: Msg; cue: Msg | null; action: Msg | null }[];
+export interface BoxLink { kind: string; name: string; words: boolean; next: boolean }
+export function linksOf(el: Msg): BoxLink[];
+export function showsOwnLabel(el: Msg): boolean;
+export function renameElement(doc: Msg, elementUuid: string, name: string): number;
+
+export interface OpenedTheme {
+  kind: "protheme"; name: string | null; themeEntry: string; theme: Buffer; entries: BundleEntry[];
+  assets: { name: string; file: string; bytes: number }[];
+}
+export interface ThemeSlideModel {
+  index: number; uuid: string | null; name: string; size: { w: number; h: number } | null;
+  elements: ElementModel[];
+  macros: SlideModel["macros"]; actionOrder: string[];
+}
+export interface ThemeModel { slides: ThemeSlideModel[]; slideCount: number; media: string[] }
+export function openTheme(buf: Buffer, opts?: { maxEntryBytes?: number }): OpenedTheme;
+export function decodeTheme(buf: Uint8Array): { doc: Msg; unknown: UnknownField[]; schema: Schema };
+export function encodeTheme(schema: Schema, doc: Msg): Buffer;
+export function checkThemeBytes(buf: Uint8Array): { ok: boolean; unknown: UnknownField[]; stable: boolean; error?: string };
+export function themeModel(doc: Msg, opts?: { roles?: Roles }): ThemeModel;
+export function readThemeFile(buf: Buffer, opts?: { roles?: Roles; maxEntryBytes?: number }): { file: OpenedTheme; doc: Msg; unknown: UnknownField[]; schema: Schema; model: ThemeModel };
+export function writeTheme(file: OpenedTheme, doc: Msg, schema: Schema): Promise<Buffer>;
+
 export interface Change { what: string; box: string | null; before: unknown; after: unknown }
 export interface Diff {
   added: string[]; removed: string[]; changed: { slide: string; changes: Change[] }[];
@@ -99,3 +125,25 @@ export interface Finding { severity: "problem" | "warning" | "note"; code: strin
 export function checkFile(buf: Buffer, opts?: {
   roles?: Roles; metrics?: Metrics; knownMacros?: Set<string>; hasMedia?: (file: string) => boolean; maxEntryBytes?: number;
 }): { findings: Finding[]; model: PresentationModel | null; predicted: "measured" | "rough"; file: Omit<OpenedFile, "pro"> };
+
+export type WorkspacePart = "macros" | "looks" | "labels" | "groups" | "props" | "messages" | "timers" | "stage_layouts" | "clear_groups" | "playlists";
+export const WORKSPACE_PARTS: Record<WorkspacePart, string>;
+export function readWorkspacePart(part: WorkspacePart, buf: Uint8Array): { part: WorkspacePart; unknown: number } & Record<string, unknown>;
+
+export function parseColor(hex: string | null): { red: number; green: number; blue: number; alpha: number } | null;
+export function setTextColor(el: Msg, hex: string): void;
+export function setAlignment(el: Msg, align: "left" | "center" | "right" | "justify"): void;
+export function setVerticalAlignment(el: Msg, where: "top" | "middle" | "bottom"): void;
+export function setTextFit(el: Msg, fit: "none" | "grow_box" | "shrink_text" | "grow_text" | "fit_text"): void;
+export function setCapitals(el: Msg, caps: "none" | "all" | "small" | "title" | "start"): void;
+export function setFont(el: Msg, font: { name: string; family: string }): void;
+export function setBoxStyle(el: Msg, style: { fill?: string; outline?: string; outline_width?: number; shadow?: boolean; rotation?: number; opacity?: number; hidden?: boolean; locked?: boolean }): void;
+export function arrangeBox(slide: Msg, el: Msg, op: "front" | "back" | "forward" | "backward" | "duplicate" | "delete"): string | null;
+
+export interface MediaInfo { file: string; kind: "image" | "video" | "audio"; format: string; w: number | null; h: number | null }
+export function mediaInfo(file: string, buf?: Buffer): MediaInfo;
+export function mediaObject(info: MediaInfo, workspace: string, like?: Msg): Msg;
+export function mediaAction(info: MediaInfo, workspace: string, opts?: { layer?: "background" | "foreground"; like?: Msg }): Msg;
+export function mediaBox(info: MediaInfo, workspace: string, opts?: { name?: string; bounds?: { x: number; y: number; width: number; height: number }; like?: Msg }): Msg;
+export function workspaceOf(doc: Msg): string | null;
+export function mediaEntryName(file: string, workspace: string): string;

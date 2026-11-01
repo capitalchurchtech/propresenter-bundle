@@ -223,3 +223,37 @@ export function tidyActions(cue, { macro, dropClear = false } = {}) {
     .sort((x, y) => rank(x[0]) - rank(y[0]) || x[1] - y[1])
     .map(([a]) => a);
 }
+
+/**
+ * Every box in a presentation or a theme, with the name of the slide it is on. The objects are the
+ * document's own, so changing one changes the document: `element` is the box, `wrapper` the slide element
+ * holding it (where its links are), `base` the slide's own list of boxes, and for a presentation `cue` and
+ * `action` the slide it is on (where its label is).
+ * @param {any} doc a decoded presentation or theme
+ */
+export function elementsOf(doc) {
+  const out = [];
+  for (const [i, s] of (doc.slides ?? []).entries()) {
+    for (const e of s.base_slide?.elements ?? []) if (e.element) out.push({ slide: s.name || `Theme slide ${i + 1}`, element: e.element, wrapper: e, base: s.base_slide, cue: null, action: null });
+  }
+  for (const c of doc.cues ?? []) {
+    for (const a of c.actions ?? []) {
+      for (const e of a.slide?.presentation?.base_slide?.elements ?? []) if (e.element) out.push({ slide: a.label?.text || c.name || "", element: e.element, wrapper: e, base: a.slide.presentation.base_slide, cue: c, action: a });
+    }
+  }
+  return out;
+}
+
+/**
+ * Rename a box, found by its uuid, in a presentation or a theme. Only the name changes.
+ * @returns {number} how many boxes carried that uuid (normally one)
+ */
+export function renameElement(doc, elementUuid, name) {
+  const clean = typeof name === "string" ? name.trim() : "";
+  if (!clean) throw new Error("Give the box a name.");
+  if (clean.length > 120) throw new Error("A box's name can be at most 120 characters.");
+  const hits = elementsOf(doc).filter((x) => x.element.uuid?.string === elementUuid);
+  if (!hits.length) throw new Error(`No box with the id ${elementUuid} in this file.`);
+  for (const h of hits) h.element.name = clean;
+  return hits.length;
+}

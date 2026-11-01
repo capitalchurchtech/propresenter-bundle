@@ -333,6 +333,7 @@ message Graphics {
           .rv.data.Graphics.Text.MediaFill media_fill = 9;
           .rv.data.Graphics.BackgroundEffect background_effect = 10;
           .rv.data.Graphics.Text.Attributes.CharacterSizeMode character_size_mode = 11;
+          .rv.data.Font original_font = 12;
         }
       }
 
@@ -428,15 +429,29 @@ message Graphics {
     repeated .rv.data.Graphics.Text.AlternateText alternate_texts = 13;
   }
 
+  message PowerPointImport {
+    .rv.data.Graphics.Text text = 1;
+    double width = 2;
+    double height = 3;
+  }
+
 }
 
 message Media {
   message Metadata {
+    enum ColorFormat {
+      COLOR_FORMAT_UNKNOWN = 0;
+      COLOR_FORMAT_SDR = 1;
+      COLOR_FORMAT_HDR_REC_2100_HLG = 2;
+      COLOR_FORMAT_HDR_REC_2100_PQ = 3;
+    }
+
     string manufacture_name = 1;
     .rv.data.URL manufacture_url = 2;
     string information = 3;
     string artist = 4;
     string format = 5;
+    .rv.data.Media.Metadata.ColorFormat color_format = 6;
   }
 
   message VideoDevice {
@@ -573,12 +588,18 @@ message Media {
       FIELD_TYPE_INTERLACED_LOWER_FIRST = 3;
     }
 
+    enum HardwareDecodingType {
+      HARDWARE_DECODING_TYPE_AUTOMATIC = 0;
+      HARDWARE_DECODING_TYPE_DISABLED = 2;
+    }
+
     double frame_rate = 1;
     .rv.data.Media.VideoProperties.FieldType field_type = 2;
     double thumbnail_position = 3;
     .rv.data.Media.VideoProperties.EndBehavior end_behavior = 4;
     bool soft_loop = 5;
     double soft_loop_duration = 6;
+    .rv.data.Media.VideoProperties.HardwareDecodingType hardware_decoding = 7;
   }
 
   message LiveVideoProperties {

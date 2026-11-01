@@ -7,6 +7,7 @@ option csharp_namespace = "Pro.SerializationInterop.RVProtoData";
 option swift_prefix = "RVData_";
 
 import "color.proto";
+import "customOptions.proto";
 import "graphicsData.proto";
 import "uuid.proto";
 
@@ -98,6 +99,12 @@ message OutputDisplay {
     TYPE_CUSTOM = 5;
   }
 
+  enum RenderFormat {
+    RENDERFORMAT_SDR = 0;
+    RENDERFORMAT_REC_2100_PQ = 1;
+    RENDERFORMAT_REC_2100_HLG = 2;
+  }
+
   string name = 1;
   string model = 2;
   string serial = 3;
@@ -109,6 +116,8 @@ message OutputDisplay {
   .rv.data.DisplayMode mode = 9;
   string render_id = 10;
   int32 video_delay = 12;
+  .rv.data.OutputDisplay.RenderFormat render_format = 13;
+  int32 hdr_max_nits_offset = 14;
   oneof HardwareOptions {
     .rv.data.OutputDisplay.Blackmagic blackmagic = 11;
   }
