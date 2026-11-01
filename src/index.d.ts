@@ -147,3 +147,7 @@ export function mediaAction(info: MediaInfo, workspace: string, opts?: { layer?:
 export function mediaBox(info: MediaInfo, workspace: string, opts?: { name?: string; bounds?: { x: number; y: number; width: number; height: number }; like?: Msg }): Msg;
 export function workspaceOf(doc: Msg): string | null;
 export function mediaEntryName(file: string, workspace: string): string;
+
+export function readPlaylistFile(buf: Buffer, opts?: { maxEntryBytes?: number }): {
+  playlists: unknown[]; presentations: string[]; media: string[]; unknown: number; entries: BundleEntry[];
+};

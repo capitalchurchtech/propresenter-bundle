@@ -1,4 +1,5 @@
 import { loadSchema, OBJECT_OPTIONS } from "./schema.js";
+import { readBundle, isZip } from "./bundle.js";
 import { findUnknownFields } from "./placeholders.js";
 import { colorHex } from "./model.js";
 
@@ -23,7 +24,7 @@ function playlistNode(node) {
       const pres = it.presentation ?? it.placeholder?.linked_data?.presentation;
       return {
         kind, name: it.name ?? "", id: id(it.uuid),
-        ...(pres ? { file: fileName(pres.document_path), arrangement: id(pres.arrangement) } : {}),
+        ...(pres ? { file: fileName(pres.document_path), arrangement: id(pres.arrangement), ...(pres.arrangement_name ? { arrangement_name: pres.arrangement_name } : {}) } : {}),
         ...(it.is_hidden ? { hidden: true } : {}),
       };
     }),
@@ -94,4 +95,27 @@ export function readWorkspacePart(part, buf) {
   const T = loadSchema().root.lookupType(p.type);
   const unknown = findUnknownFields(T, buf).length;
   return { part, unknown, ...p.read(T.toObject(T.decode(buf), OBJECT_OPTIONS)) };
+}
+
+/**
+ * A playlist file (.proplaylist) from its bytes: a zip of `data` (an rv.data.Playlist whose root, named
+ * PLAYLIST, holds the real playlists), the .pro files the playlist plays, and their media. Read only.
+ * @param {Buffer} buf
+ * @param {{ maxEntryBytes?: number }} [opts]
+ */
+export function readPlaylistFile(buf, opts = {}) {
+  if (!isZip(buf)) throw new Error("This is not a playlist: a .proplaylist is a zip, and this file is not one.");
+  const entries = readBundle(buf, opts);
+  const data = entries.find((e) => e.name === "data");
+  if (!data) throw new Error("This zip holds no playlist data, so it is not a ProPresenter playlist.");
+  const T = loadSchema().root.lookupType("rv.data.Playlist");
+  const unknown = findUnknownFields(T, data.data).length;
+  const doc = T.toObject(T.decode(data.data), OBJECT_OPTIONS);
+  const tree = playlistNode(doc);
+  return {
+    playlists: tree.kind === "folder" ? tree.children : [tree],
+    presentations: entries.filter((e) => /\.pro$/i.test(e.name)).map((e) => e.name),
+    media: entries.filter((e) => e !== data && !/\.pro$/i.test(e.name) && !e.name.endsWith("/")).map((e) => e.name),
+    unknown, entries,
+  };
 }

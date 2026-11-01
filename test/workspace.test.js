@@ -39,3 +39,21 @@ test("a field a newer ProPresenter added is counted, and the rest still read", (
   assert.deepEqual(r.labels.map((l) => l.text), ["Verse"]);
   assert.throws(() => readWorkspacePart("database", buf), /No workspace part database/);
 });
+
+test("a playlist file: its playlists and items, with arrangement names, and the presentations and media it carries", async () => {
+  const { writeBundle, readPlaylistFile, openFile } = await import("../src/index.js");
+  const fs = await import("node:fs");
+  const sample = fs.readFileSync(new URL("./fixtures/sample-fixed.pro", import.meta.url));
+  const data = encode("rv.data.Playlist", { uuid: uid(1), name: "PLAYLIST", type: 1, playlists: { playlists: [{ uuid: uid(2), name: "Example Sunday", type: 1, items: { items: [
+    { uuid: uid(3), name: "Welcome", header: {} },
+    { uuid: uid(4), name: "Example Sunday", presentation: { document_path: { local: { root: 2, path: "Example Sunday.pro" } }, arrangement: uid(5), arrangement_name: "Full" } },
+  ] } }] } });
+  const zip = await writeBundle([{ name: "data", data }, { name: "Example Sunday.pro", data: sample }, { name: "Users/example/Pictures/dot.png", data: Buffer.from("x") }]);
+  const r = readPlaylistFile(zip);
+  assert.equal(r.unknown, 0);
+  assert.equal(r.playlists[0].name, "Example Sunday");
+  assert.deepEqual(r.playlists[0].items.map((i) => [i.kind, i.name, i.arrangement_name ?? null]), [["header", "Welcome", null], ["presentation", "Example Sunday", "Full"]]);
+  assert.deepEqual([r.presentations, r.media], [["Example Sunday.pro"], ["Users/example/Pictures/dot.png"]]);
+  assert.throws(() => openFile(zip), /This is a playlist.*readPlaylistFile/);
+  assert.throws(() => readPlaylistFile(sample), /not a playlist/);
+});
