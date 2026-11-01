@@ -13,7 +13,7 @@ export {
   fitSpeakerBox, roleFor, repointBackgrounds, tidyActions, elementsOf, renameElement,
 } from "./elements.js";
 export { openFile, toModel, mediaFilesOf, readPresentationFile, linksOf, showsOwnLabel } from "./model.js";
-export { WORKSPACE_PARTS, readWorkspacePart } from "./workspace.js";
+export { WORKSPACE_PARTS, readWorkspacePart, readPlaylistFile } from "./workspace.js";
 export { mediaInfo, mediaObject, mediaAction, mediaBox, workspaceOf, mediaEntryName } from "./media.js";
 export { parseColor, setTextColor, setAlignment, setVerticalAlignment, setTextFit, setCapitals, setFont, setBoxStyle, arrangeBox } from "./format.js";
 export { openTheme, decodeTheme, encodeTheme, checkThemeBytes, themeModel, readThemeFile, writeTheme } from "./theme.js";

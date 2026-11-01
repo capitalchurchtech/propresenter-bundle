@@ -19,6 +19,7 @@ export function openFile(buf, opts = {}) {
   const entries = readBundle(buf, opts);
   const pros = entries.filter((e) => /\.pro$/i.test(e.name));
   if (entries.some((e) => /(^|\/)Theme$/.test(e.name)) && !pros.length) throw new Error("This is a theme (.protheme), not a presentation. Open it with readThemeFile.");
+  if (entries.some((e) => e.name === "data")) throw new Error("This is a playlist (.proplaylist), not a presentation. Open it with readPlaylistFile.");
   if (pros.length !== 1) throw new Error(pros.length ? `This bundle holds ${pros.length} presentations; expected one.` : "This zip holds no .pro file, so it is not a ProPresenter bundle.");
   return {
     kind: "probundle",
