@@ -3,13 +3,15 @@
 Not on npm, and marked `private` so it can't be published there by accident. Install it from a
 tag of this repository, for example `npm install github:<owner>/propresenter-bundle#v0.1.0`.
 
-Reads, checks and edits ProPresenter 7 presentations (`.pro`) and bundles (`.probundle`) in plain
-Node.js, with no build step. Used by Refrain and by an announcements exporter, so the same tested code
+Reads, checks and edits ProPresenter 7 presentations (`.pro`), bundles (`.probundle`) and themes
+(`.protheme`) in plain Node.js, with no build step. Used by Refrain and by an announcements exporter, so the same tested code
 runs in both.
 
 **Unofficial.** Renewed Vision does not publish ProPresenter's file format. This uses the community
 schema from [greyshirtguy/ProPresenter7-Proto](https://github.com/greyshirtguy/ProPresenter7-Proto)
-(MIT, in `proto/` with its own licence), which is a version behind ProPresenter 21. Nothing here is
+(MIT, in `proto/` with its own licence), its `autogen-proto` generated from ProPresenter 21.4. A newer
+ProPresenter (22 is in beta) can write fields it lacks: those are counted, a file holding them is read but
+not changed, and `npm run schema` recompiles `proto/` when upstream catches up. Nothing here is
 supported by Renewed Vision, and a ProPresenter update can change what these files hold. ProPresenter is a
 trademark of Renewed Vision; this project is not affiliated with or endorsed by them, and uses the name only
 to say which files it reads.
@@ -25,6 +27,22 @@ to say which files it reads.
   capitals that stop short of the words, a predicted one-word last line, objects out of the house order.
 - **Edit** the way ProPresenter writes: `setText` rebuilds a box's RTF and its font ranges together and
   keeps its capitalisation; `setImage`, `tidyElements`, `fitSpeakerBox`, `tidyActions`, `freshCopy`.
+- **Themes** (`readThemeFile`): each theme slide, its boxes with the id that names each one, the macros it
+  fires, and the pictures in its Assets. `renameElement` renames a box in a theme or a presentation;
+  `writeTheme` writes a changed copy with every picture exactly as it was, after the same check a
+  presentation gets, and refuses a theme holding anything the schema can't read.
+- **The slide editor's box settings** (`setTextColor`, `setAlignment`, `setVerticalAlignment`, `setTextFit`,
+  `setCapitals`, `setFont`, `setBoxStyle`, `arrangeBox`): each written where ProPresenter keeps it, in both
+  places where it keeps two. Checked against how ProPresenter 21 wrote real files and re-read through the
+  schema; not yet imported into ProPresenter and looked at. A font's bold is guessed from its name
+  (`boldOf`), which is wrong for some faces (Georgia-Italic's bold is Georgia-BoldItalic).
+- **Linked boxes.** A box can take its words, colour, picture or visibility from elsewhere: the slide's
+  label, a timer, the clock, another slide. `linksOf` names each link in plain words, and a box linked to
+  its own slide's label reads as the label (`showsOwnLabel`), since that is what ProPresenter shows.
+- **Read a workspace** (`readWorkspacePart`), read only: macros and their collections, Looks and screens,
+  labels, groups, props, messages, timers, stage layouts, clear groups, and the playlist library as a tree.
+  These are the files in a workspace's `Configuration` and `Playlists` folders; ProPresenter's database is
+  never read. A field a newer ProPresenter added is counted, and the rest still read.
 - **Zip** bundles (`readBundle`, `writeBundle`). ProPresenter's own zips have a central directory 98
   bytes too long, so they are read by their local headers.
 - **Build a show from a script** (`propresenter-bundle/script`). `parseScript` reads a play's script
@@ -50,6 +68,9 @@ to say which files it reads.
 - **Which box is which is a church's own rule.** `createRoles(rules)` takes the fonts and shapes that
   mean title, subtitle, link, QR code and so on in your theme. The defaults are plain.
 - **Line-break rules are English** (`englishBreaks`). Pass another table to `createGeometry`.
+- **A changed theme has not yet been imported into ProPresenter here.** It is written as a copy and
+  passes the same check as a presentation, but whether ProPresenter keeps a renamed box's link to the
+  presentations that use the theme is untested. Try one on a copy of the library first.
 - **Never edit a library file in place.** ProPresenter holds library files open and overwrites changes
   made under it. Edit a copy and write a new file.
 
@@ -80,5 +101,6 @@ with the package (`test/fixtures/`), so a project using it can test against the 
 ## Licence
 
 MIT. The schema in `proto/` is MIT, copyright greyshirtguy, copied without change. `src/proto.json` is
-that schema compiled, plus two fields this package adds (its own work, under its own licence) and Google's
-standard protobuf types (BSD-3-Clause, copyright Google). `NOTICE` has the details and Google's notice.
+that schema compiled, with one field kept in this package's own form (its own work, under its own licence),
+and Google's standard protobuf types (BSD-3-Clause, copyright Google). `NOTICE` has the details and Google's
+notice.

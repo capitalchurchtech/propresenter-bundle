@@ -84,6 +84,11 @@ message Video {
     LOOP_FOR_TIME = 3;
   }
 
+  enum HardwareDecodingType {
+    AUTOMATIC = 0;
+    DISABLED = 1;
+  }
+
   .rv.analytics.trigger.media.VisualMedia visual_media = 7;
   .rv.analytics.trigger.media.Video.PlaybackBehavior playback_behavior = 8;
   .rv.analytics.trigger.media.CompletionTarget completion_target = 9;
@@ -93,6 +98,7 @@ message Video {
   uint32 audio_channel_count = 13;
   .rv.analytics.trigger.media.Transport transport = 14;
   .rv.analytics.trigger.media.SourceType source_type = 15;
+  .rv.analytics.trigger.media.Video.HardwareDecodingType hardware_decoding = 16;
 }
 
 message Audio {

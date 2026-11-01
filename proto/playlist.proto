@@ -9,6 +9,7 @@ option swift_prefix = "RVData_";
 import "action.proto";
 import "color.proto";
 import "cue.proto";
+import "customOptions.proto";
 import "hotKey.proto";
 import "musicKeyScale.proto";
 import "planningCenter.proto";

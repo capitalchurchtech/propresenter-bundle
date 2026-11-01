@@ -2,10 +2,10 @@ import { createRequire } from "node:module";
 import protobuf from "protobufjs";
 import { addPlaceholders, findUnknownFields } from "./placeholders.js";
 
-// The community schema (greyshirtguy/ProPresenter7-Proto, MIT, in proto/), compiled to proto.json. proto.json
-// also holds two fields this package adds (_unknown_12 on text attributes, _unknown_6 on media metadata) and
-// Google's protobuf types (BSD-3-Clause): see NOTICE.
-// UNOFFICIAL: Renewed Vision does not publish or support it, and it is a version behind ProPresenter 21.
+// The community schema (greyshirtguy/ProPresenter7-Proto's autogen-proto, from ProPresenter 21.4, MIT, in proto/),
+// compiled to proto.json by scripts/compile-schema.js, with Google's protobuf types (BSD-3-Clause): see NOTICE.
+// UNOFFICIAL: Renewed Vision does not publish or support it. A newer ProPresenter can write fields it lacks; those
+// are found (findUnknownFields) and carried through, never silently dropped.
 
 const require = createRequire(import.meta.url);
 const PROTO_JSON = require("./proto.json");
@@ -19,7 +19,7 @@ export function loadSchema() {
   return { root, Presentation: root.lookupType("rv.data.Presentation"), ThemeDocument: root.lookupType("rv.data.Template.Document") };
 }
 
-const OBJECT_OPTIONS = { longs: String, enums: Number, bytes: Buffer, defaults: false };
+export const OBJECT_OPTIONS = { longs: String, enums: Number, bytes: Buffer, defaults: false };
 
 /**
  * A .pro's bytes as a plain object, plus what the schema could not read. Unknown fields are carried as
@@ -57,7 +57,7 @@ export function checkPresentationBytes(buf) {
   }
 }
 
-function deepEqual(a, b) {
+export function deepEqual(a, b) {
   if (a === b) return true;
   if (Buffer.isBuffer(a) && Buffer.isBuffer(b)) return a.equals(b);
   if (a instanceof Uint8Array && b instanceof Uint8Array) return Buffer.from(a).equals(Buffer.from(b));

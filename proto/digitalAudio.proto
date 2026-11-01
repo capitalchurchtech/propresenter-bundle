@@ -6,6 +6,8 @@ option cc_enable_arenas = true;
 option csharp_namespace = "Pro.SerializationInterop.RVProtoData";
 option swift_prefix = "RVData_";
 
+import "customOptions.proto";
+
 message DigitalAudio {
   message Setup {
     repeated .rv.data.DigitalAudio.Bus buses = 1;

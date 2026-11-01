@@ -17,6 +17,8 @@ import "uuid.proto";
 message API_v1_SlideIndex {
   uint32 index = 1;
   .rv.data.API_v1_Identifier presentation_id = 2;
+  uint32 total_cues = 3;
+  uint32 remaining_cues = 4;
 }
 
 message API_v1_Presentation {
@@ -32,6 +34,13 @@ message API_v1_Presentation {
     string name = 1;
     .rv.data.API_v1_Color color = 2;
     repeated .rv.data.API_v1_Presentation.SlideGroup.Slide slides = 3;
+    string uuid = 4;
+  }
+
+  message Arrangement {
+    .rv.data.API_v1_Identifier id = 1;
+    repeated string groups = 2;
+    uint32 total_cues = 3;
   }
 
   enum Destination {
@@ -44,6 +53,11 @@ message API_v1_Presentation {
   bool has_timeline = 3;
   string presentation_path = 4;
   .rv.data.API_v1_Presentation.Destination destination = 5;
+  repeated .rv.data.API_v1_Presentation.Arrangement arrangements = 6;
+  string current_arrangement = 7;
+  string type = 8;
+  bool is_authorized = 9;
+  uint32 total_cues = 10;
 }
 
 message API_v1_Presentation_Request {

@@ -91,7 +91,7 @@ const IMAGE_FORMAT = { jpg: "JPG", jpeg: "JPG", png: "png", gif: "gif", heic: "H
 /** How ProPresenter names a picture's format, from its file name. */
 export const imageFormat = (file) => IMAGE_FORMAT[file.split(".").pop()?.toLowerCase() ?? ""] ?? "JPG";
 // How ProPresenter names a clip's codec: a guess from the extension; it reads the real one when the file is there.
-const CODEC = { mp4: "h264", m4v: "h264", mov: "h264", mp3: "mp3float", m4a: "aac", aac: "aac", wav: "pcm_s16le", aif: "pcm_s16be", aiff: "pcm_s16be" };
+export const CODEC = { mp4: "h264", m4v: "h264", mov: "h264", mp3: "mp3float", m4a: "aac", aac: "aac", wav: "pcm_s16le", aif: "pcm_s16be", aiff: "pcm_s16be" };
 
 /**
  * One kind of show from a church's pack: the folder holds template.pro (the booth's own presentation) and

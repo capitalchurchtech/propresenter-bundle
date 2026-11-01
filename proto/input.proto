@@ -8,6 +8,7 @@ option swift_prefix = "RVData_";
 
 import "alphaType.proto";
 import "color.proto";
+import "customOptions.proto";
 import "digitalAudio.proto";
 import "graphicsData.proto";
 import "url.proto";
@@ -67,5 +68,16 @@ message AudioInput {
     .rv.data.DigitalAudio.Device audio_device = 3;
     .rv.data.Media.VideoDevice video_device = 4;
   }
+}
+
+message CloudVideoInput {
+  .rv.data.UUID uuid = 1;
+  string user_description = 2;
+  .rv.data.URL thumbnail_path = 3;
+}
+
+message CloudAudioInput {
+  .rv.data.UUID uuid = 1;
+  string user_description = 2;
 }
 

@@ -39,7 +39,7 @@ message Timer {
   reserved 9;
   message Format {
     enum Style {
-      STYE_NONE = 0;
+      STYLE_NONE = 0;
       STYLE_SHORT = 1;
       STYLE_LONG = 2;
       STYLE_REMOVE_SHORT = 3;
@@ -94,5 +94,14 @@ message TimersDocument {
   .rv.data.ApplicationInfo application_info = 1;
   .rv.data.Clock clock = 2;
   repeated .rv.data.Timer timers = 3;
+}
+
+message LocalTimer {
+  .rv.data.UUID uuid = 1;
+  .rv.data.Timer.Configuration configuration = 2;
+}
+
+message TimersLocalDocument {
+  repeated .rv.data.LocalTimer timers = 1;
 }
 

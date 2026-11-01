@@ -82,3 +82,12 @@ message MessageDocument {
   repeated .rv.data.Message messages = 2;
 }
 
+message LocalMessage {
+  .rv.data.UUID uuid = 1;
+  repeated .rv.data.Message.TokenValue token_values = 2;
+}
+
+message MessageLocalDocument {
+  repeated .rv.data.LocalMessage messages = 1;
+}
+

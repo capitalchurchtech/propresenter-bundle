@@ -2,16 +2,15 @@ propresenter-bundle includes work by others, under their own licences.
 
 1. The ProPresenter schema
 
-   proto/ is the community schema from https://github.com/greyshirtguy/ProPresenter7-Proto
-   ("Proto 19beta", dumped from ProPresenter 19 beta), copied without change. MIT licence,
-   Copyright (c) 2023 greyshirtguy; the full text is in proto/LICENSE.
+   proto/ is the community schema from https://github.com/greyshirtguy/ProPresenter7-Proto, its
+   "autogen-proto" folder (generated from ProPresenter 21.4; proto/version.txt), copied without
+   change. MIT licence, Copyright (c) 2023 greyshirtguy; the full text is in proto/LICENSE.
 
-   src/proto.json is that schema compiled, with two fields added by this package, which the
-   community schema leaves unnamed:
-     - rv.data.Graphics.Text.Attributes.CustomAttribute field 12 (_unknown_12): each run of
-       text's font
-     - rv.data.Media.Metadata field 6 (_unknown_6)
-   Those two additions are this package's own, under its MIT licence (LICENSE).
+   src/proto.json is that schema compiled by scripts/compile-schema.js, with one change of this
+   package's own: rv.data.Graphics.Text.Attributes.CustomAttribute field 12, which the schema names
+   original_font, is kept as _unknown_12 (repeated raw bytes), the form this package reads and
+   writes each run of text's font in. The bytes in a file are the same either way. That change is
+   this package's own, under its MIT licence (LICENSE).
 
 2. Format research by others
 
@@ -26,8 +25,8 @@ propresenter-bundle includes work by others, under their own licences.
 3. Google's protobuf types
 
    src/proto.json also contains Google's standard protobuf types (google.protobuf: the
-   descriptor and wrapper types the schema imports), compiled from the copies bundled with
-   protobufjs. They carry this notice:
+   descriptor and wrapper types the schema imports), compiled from the copies in proto/google,
+   which came with the upstream schema without their comments. Google's licence for them:
 
    Copyright 2014, Google Inc.  All rights reserved.
 

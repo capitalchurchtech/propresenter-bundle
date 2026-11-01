@@ -33,6 +33,8 @@ message ApplicationLaunch {
   string video_controller = 11;
   uint64 video_controller_ram = 12;
   string blackmagic_desktop_version = 13;
+  repeated string enabled_feature_flags = 14;
+  string organization_id = 15;
 }
 
 message VideoInputTriggered {
@@ -296,6 +298,99 @@ message NetworkApp {
 
   .rv.analytics.trackedevents.NetworkApp.AppID app_id = 1;
   string device_id = 2;
+}
+
+message LocalWorkspaceStats {
+  int32 total_workspaces = 1;
+  int32 number_of_workspace_switches = 2;
+}
+
+message FontReplacement {
+  enum Source {
+    IMPORT = 0;
+    BANNER = 1;
+  }
+
+  .rv.analytics.trackedevents.FontReplacement.Source source = 1;
+  string missing_font = 2;
+  string replacement_font = 3;
+}
+
+message TriggerExternalPresentation {
+  enum Type {
+    POWERPOINT = 0;
+    KEYNOTE = 1;
+  }
+
+  .rv.analytics.trackedevents.TriggerExternalPresentation.Type type = 1;
+}
+
+message WorkspaceCreation {
+  enum Source {
+    CLOUD_ONBOARDING = 0;
+    USER_ONBOARDING = 1;
+    SETTINGS = 2;
+  }
+
+  .rv.analytics.trackedevents.WorkspaceCreation.Source source = 1;
+  uint64 duration_seconds = 2;
+}
+
+message AvailableWorkspace {
+  enum WorkspaceType {
+    LOCAL = 0;
+    CLOUD_UNDOWNLOADED = 1;
+    CLOUD_DOWNLOADED = 2;
+  }
+
+  .rv.analytics.trackedevents.AvailableWorkspace.WorkspaceType type = 1;
+  uint64 size_in_bytes = 2;
+  bool is_current = 3;
+}
+
+message OnboardingFlowOutcome {
+  enum OnboardingType {
+    NEW_TO_CLOUD = 0;
+    NEW_USER = 1;
+  }
+
+  enum Result {
+    SKIP_FOR_NOW = 0;
+    CONTINUE_WITH_LOCAL = 1;
+    CREATE_CLOUD = 2;
+    JOIN_CLOUD = 3;
+  }
+
+  .rv.analytics.trackedevents.OnboardingFlowOutcome.OnboardingType onboarding_type = 1;
+  .rv.analytics.trackedevents.OnboardingFlowOutcome.Result result = 2;
+}
+
+message SyncingUnpaused {
+  uint64 duration = 1;
+}
+
+message UserWorkspaceTreeModification {
+  enum Bucket {
+    OTHER = 0;
+    LIBRARIES = 1;
+    THEMES = 2;
+    PLAYLISTS = 3;
+    PLAYLIST_TEMPLATES = 4;
+    CONFIGURATION = 5;
+    MEDIA = 6;
+    PRESETS = 7;
+    DOWNLOADS = 8;
+  }
+
+  enum Operation {
+    MODIFIED = 0;
+    CREATED = 1;
+    RENAMED = 2;
+    REMOVED = 3;
+  }
+
+  .rv.analytics.trackedevents.UserWorkspaceTreeModification.Bucket bucket = 1;
+  .rv.analytics.trackedevents.UserWorkspaceTreeModification.Operation operation = 2;
 }
 
 enum Codec {

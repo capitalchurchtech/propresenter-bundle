@@ -14,14 +14,16 @@ message ResolvedFeatureFlags {
   reserved 6;
   reserved 7;
   reserved 9;
+  reserved 13;
   reserved 14;
+  reserved 16;
   bool content_store_staging_enabled = 1;
   bool staging_api_endpoint_enabled = 8;
   bool pro_content_staging_enabled = 10;
   bool core_networkapi_playlist = 11;
   bool core_networkapi_presentation = 12;
-  bool endpoint_version_1_1_enabled = 13;
   bool core_client_sync = 15;
-  bool in_app_notifications_enabled = 16;
+  bool hdr_rendering_enabled = 17;
+  bool server_driven_feature_flags = 18;
 }
 

@@ -10,7 +10,7 @@ import "url.proto";
 import "uuid.proto";
 
 message AdvertisementGroup {
-  .rv.data.UUID id = 1;
+  .rv.data.UUID uuid = 1;
   string name = 2;
   .rv.data.URL url = 3;
   int32 start_index = 4;

@@ -55,6 +55,22 @@ message ProApiNetworkConfiguration {
   uint32 tcp_stream_port = 13;
   bool tcp_stream_enable = 14;
   .rv.data.AirplayConfiguration airplay = 15;
+  bool proremote_websocket_enable = 16;
+  string proremote_websocket_password = 17;
+}
+
+message ProNetworkConfigurationMessage {
+  message RestartNetwork {
+  }
+
+  message Shutdown {
+  }
+
+  oneof Message {
+    .rv.data.ProApiNetworkConfiguration configuration = 1;
+    .rv.data.ProNetworkConfigurationMessage.RestartNetwork restart_network = 2;
+    .rv.data.ProNetworkConfigurationMessage.Shutdown shutdown = 3;
+  }
 }
 
 message ProLink {

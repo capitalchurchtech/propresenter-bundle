@@ -7,6 +7,7 @@ option csharp_namespace = "Pro.SerializationInterop.RVProtoData";
 option swift_prefix = "RVData_";
 
 import "color.proto";
+import "graphicsData.proto";
 import "screens.proto";
 import "uuid.proto";
 
@@ -43,5 +44,21 @@ message ProPresenterScreen {
     .rv.data.ProPresenterScreen.CombinedArrangement arrangement_combined = 4;
     .rv.data.ProPresenterScreen.EdgeBlendArrangement arrangement_edge_blend = 5;
   }
+  oneof RenderingEnabledOptional {
+    bool rendering_enabled = 9;
+  }
+}
+
+message CloudProPresenterScreen {
+  reserved "arrangement_single";
+  reserved "arrangement_combined";
+  reserved "arrangement_edge_blend";
+  reserved 3;
+  reserved 4;
+  reserved 5;
+  string name = 1;
+  .rv.data.ProPresenterScreen.ScreenType screen_type = 2;
+  .rv.data.UUID uuid = 6;
+  .rv.data.Graphics.Size size = 7;
 }
 
