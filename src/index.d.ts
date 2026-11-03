@@ -151,3 +151,7 @@ export function mediaEntryName(file: string, workspace: string): string;
 export function readPlaylistFile(buf: Buffer, opts?: { maxEntryBytes?: number }): {
   playlists: unknown[]; presentations: string[]; media: string[]; unknown: number; entries: BundleEntry[];
 };
+
+export function setLineSpacing(el: Msg, multiple: number): void;
+export function notesOf(action: Msg): string;
+export function setNotes(action: Msg, text: string): void;

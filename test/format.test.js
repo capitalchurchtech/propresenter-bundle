@@ -89,3 +89,30 @@ test("boxes arranged front to back, copied with a fresh id, and deleted", () => 
   assert.throws(() => arrangeBox(base, base.elements[0], "sideways"), /front, back/);
   stillGood(schema, doc);
 });
+
+test("line spacing as ProPresenter writes it: \\sl in twentieths with \\slmult1 on every paragraph, and the paragraph style; single writes neither", async () => {
+  const { setLineSpacing } = await import("../src/index.js");
+  const { doc, schema } = open("show-template.pro");
+  const x = firstText(doc);
+  setLineSpacing(x.wrapper, 1.3);
+  const paras = rtf(x).match(/\\pard(?![a-z])/g).length;
+  assert.equal((rtf(x).match(/\\sl312\\slmult1/g) ?? []).length, paras);
+  assert.equal(x.element.text.attributes.paragraph_style.line_height_multiple, 1.3);
+  setLineSpacing(x.wrapper, 1);
+  assert.doesNotMatch(rtf(x), /\\sl-?\d/);
+  assert.throws(() => setLineSpacing(x.wrapper, 9), /0\.1 to 5/);
+  stillGood(schema, doc);
+});
+
+test("a slide's notes: set with line breaks and any characters, read back as text, removed when empty", async () => {
+  const { setNotes, notesOf } = await import("../src/index.js");
+  const { doc, schema } = open("show-template.pro");
+  const action = doc.cues[0].actions.find((a) => a.slide);
+  setNotes(action, "Lights: 139,1\nCue the band — {ready}");
+  assert.equal(notesOf(action), "Lights: 139,1\nCue the band — {ready}");
+  stillGood(schema, doc);
+  setNotes(action, "  ");
+  assert.equal(action.slide.presentation.notes, undefined);
+  assert.equal(notesOf(action), "");
+  assert.throws(() => setNotes({}, "x"), /Only a presentation slide/);
+});

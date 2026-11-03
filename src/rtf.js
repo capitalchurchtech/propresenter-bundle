@@ -49,7 +49,8 @@ export function boldOf(name) {
   return name.replace(/-(Regular|Medium|Light|Roman)$/, "") + "-Bold";
 }
 
-function escape(s) {
+/** Text as RTF: braces and backslashes escaped, line breaks as RTF breaks, anything past ASCII as Cocoa writes it. */
+export function escape(s) {
   let out = "";
   for (const ch of s) {
     const c = ch.codePointAt(0);

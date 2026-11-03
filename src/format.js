@@ -1,4 +1,4 @@
-import { readRangeFont, writeRangeFont, boldOf } from "./rtf.js";
+import { readRangeFont, writeRangeFont, boldOf, escape, readableText } from "./rtf.js";
 import { freshCopy } from "./elements.js";
 
 // What ProPresenter's slide editor changes on a box, written the way ProPresenter writes it. Where it keeps a
@@ -154,4 +154,38 @@ export function arrangeBox(slide, el, op) {
   list.splice(at, 1);
   list.splice(to, 0, el);
   return null;
+}
+
+/**
+ * Line spacing, as a multiple of the font's own (1 is single). ProPresenter writes it twice: \sl (in
+ * twentieths of a point, 240 to a line) with \slmult1 on every RTF paragraph, and the paragraph style's
+ * line_height_multiple; at 1 it writes no \sl at all. Checked against ProPresenter 21's own files.
+ */
+export function setLineSpacing(el, multiple) {
+  if (!(typeof multiple === "number" && multiple >= 0.1 && multiple <= 5)) throw new Error("Line spacing is a multiple from 0.1 to 5 (1 is single).");
+  const t = textOfBox(el);
+  let rtf = rtfOf(t).replace(/\\sl-?\d+(\\slmult\d)?/g, "");
+  if (Math.abs(multiple - 1) > 1e-9) rtf = rtf.replace(/\\pard(?![a-z])(\\pardeftab\d+)?/g, (m) => `${m}\\sl${Math.round(240 * multiple)}\\slmult1`);
+  setRtf(t, rtf);
+  t.attributes.paragraph_style = { ...(t.attributes.paragraph_style ?? {}), line_height_multiple: multiple };
+}
+
+// A slide's notes, as ProPresenter writes them: Helvetica Neue 48 on white.
+const NOTES_HEAD = "{\\rtf1\\ansi\\ansicpg1252\\cocoartf2868\n\\cocoatextscaling0\\cocoaplatform0{\\fonttbl\\f0\\fnil\\fcharset0 HelveticaNeue;}\n" +
+  "{\\colortbl;\\red255\\green255\\blue255;\\red255\\green255\\blue255;}\n{\\*\\expandedcolortbl;;\\csgray\\c100000;}\n" +
+  "\\deftab1300\n\\pard\\pardeftab1300\\pardirnatural\\partightenfactor0\n\n\\f0\\fs48 \\cf2 ";
+
+/** A slide's notes as plain text ("" for none). `action` is the slide's own action (the one with `slide`). */
+export function notesOf(action) {
+  const n = action?.slide?.presentation?.notes;
+  return n?.rtf_data ? readableText(Buffer.from(n.rtf_data).toString("latin1")).trim() : "";
+}
+
+/** New notes on a slide, or none for "". Line breaks are kept. */
+export function setNotes(action, text) {
+  const p = action?.slide?.presentation;
+  if (!p) throw new Error("Only a presentation slide has notes.");
+  if (typeof text !== "string") throw new Error("Notes are text.");
+  if (!text.trim()) { delete p.notes; return; }
+  p.notes = { rtf_data: Buffer.from(`${NOTES_HEAD}${escape(text)}}`, "latin1"), attributes: {} };
 }
