@@ -31,6 +31,8 @@ to say which files it reads.
   fires, and the pictures in its Assets. `renameElement` renames a box in a theme or a presentation;
   `writeTheme` writes a changed copy with every picture exactly as it was, after the same check a
   presentation gets, and refuses a theme holding anything the schema can't read.
+  `themeSlideAsCue` makes a theme slide a presentation slide: its boxes and actions, and its own pictures
+  (kept relative to the theme) pointed at the workspace's media and returned to go into the bundle.
 - **The slide editor's box settings** (`setTextColor`, `setAlignment`, `setVerticalAlignment`, `setTextFit`,
   `setCapitals`, `setFont`, `setBoxStyle`, `arrangeBox`): each written where ProPresenter keeps it, in both
   places where it keeps two. Checked against how ProPresenter 21 wrote real files and re-read through the
