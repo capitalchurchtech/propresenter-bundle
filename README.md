@@ -36,6 +36,8 @@ to say which files it reads.
   places where it keeps two. Checked against how ProPresenter 21 wrote real files and re-read through the
   schema; not yet imported into ProPresenter and looked at. A font's bold is guessed from its name
   (`boldOf`), which is wrong for some faces (Georgia-Italic's bold is Georgia-BoldItalic).
+- **Line spacing and notes** (`setLineSpacing`, `notesOf`, `setNotes`): line spacing as ProPresenter 21 writes it
+  (`\sl` with `\slmult1` on every paragraph, and the paragraph style's multiple), and a slide's notes as text.
 - **Linked boxes.** A box can take its words, colour, picture or visibility from elsewhere: the slide's
   label, a timer, the clock, another slide. `linksOf` names each link in plain words, and a box linked to
   its own slide's label reads as the label (`showsOwnLabel`), since that is what ProPresenter shows.
