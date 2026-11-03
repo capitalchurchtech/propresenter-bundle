@@ -61,3 +61,21 @@ test("a theme with a field the schema lacks is read, but never written back", as
   assert.equal(unknown.length, 1);
   await assert.rejects(writeTheme(odd, doc, schema), /does not understand, so it is not written back/);
 });
+
+test("a theme slide becomes a presentation slide, its own pictures pointed at the workspace and carried", async () => {
+  const { themeSlideAsCue, themeWorkspace, loadSchema, encodePresentation, checkPresentationBytes } = await import("../src/index.js");
+  const { file, doc } = readThemeFile(themeBytes());
+  const ws = themeWorkspace(doc);
+  assert.match(ws, /\/UserWorkspaces\/|ProPresenter$/, "the folder the theme's Themes folder sits in");
+  const { cue, media } = themeSlideAsCue(file, doc, 0, { workspace: ws, label: "Romans 12:2" });
+  const base = cue.actions[0].slide.presentation.base_slide;
+  assert.deepEqual([cue.name, cue.actions[0].label.text, base.elements.length], ["Romans 12:2", "Romans 12:2", 3]);
+  assert.notEqual(base.uuid.string, doc.slides[0].base_slide.uuid.string, "fresh ids");
+  const bg = base.elements[0].element.fill.media.url;
+  assert.deepEqual(bg.local, { root: 10, path: "Media/Assets/example-bg.png" }, "out of the theme's Assets, into the workspace's Media");
+  assert.deepEqual(media.map((m) => m.name), [`${ws}/Media/Assets/example-bg.png`]);
+  const { Presentation } = loadSchema();
+  const pres = { uuid: { string: "00000000-0000-4000-8000-0000000000AA" }, name: "From theme", cues: [cue], cue_groups: [{ group: { uuid: { string: "00000000-0000-4000-8000-0000000000AB" }, name: "Message" }, cue_identifiers: [cue.uuid] }] };
+  assert.equal(checkPresentationBytes(encodePresentation({ Presentation }, pres)).ok, true);
+  assert.throws(() => themeSlideAsCue(file, doc, 9, { workspace: ws }), /No theme slide 10/);
+});

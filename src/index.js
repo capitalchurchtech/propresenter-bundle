@@ -16,6 +16,6 @@ export { openFile, toModel, mediaFilesOf, readPresentationFile, linksOf, showsOw
 export { WORKSPACE_PARTS, readWorkspacePart, readPlaylistFile } from "./workspace.js";
 export { mediaInfo, mediaObject, mediaAction, mediaBox, workspaceOf, mediaEntryName } from "./media.js";
 export { parseColor, setTextColor, setAlignment, setVerticalAlignment, setTextFit, setCapitals, setFont, setBoxStyle, arrangeBox, setLineSpacing, notesOf, setNotes } from "./format.js";
-export { openTheme, decodeTheme, encodeTheme, checkThemeBytes, themeModel, readThemeFile, writeTheme } from "./theme.js";
+export { openTheme, decodeTheme, encodeTheme, checkThemeBytes, themeModel, readThemeFile, writeTheme, themeWorkspace, themeSlideAsCue } from "./theme.js";
 export { diffModels } from "./diff.js";
 export { checkFile } from "./check.js";

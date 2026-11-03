@@ -155,3 +155,6 @@ export function readPlaylistFile(buf: Buffer, opts?: { maxEntryBytes?: number })
 export function setLineSpacing(el: Msg, multiple: number): void;
 export function notesOf(action: Msg): string;
 export function setNotes(action: Msg, text: string): void;
+
+export function themeWorkspace(doc: Msg): string | null;
+export function themeSlideAsCue(file: OpenedTheme, doc: Msg, index: number, opts: { workspace: string; label?: string }): { cue: Msg; media: BundleEntry[] };
