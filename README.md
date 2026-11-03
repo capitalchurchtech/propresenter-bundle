@@ -40,6 +40,12 @@ to say which files it reads.
   (`boldOf`), which is wrong for some faces (Georgia-Italic's bold is Georgia-BoldItalic).
 - **Line spacing and notes** (`setLineSpacing`, `notesOf`, `setNotes`): line spacing as ProPresenter 21 writes it
   (`\sl` with `\slmult1` on every paragraph, and the paragraph style's multiple), and a slide's notes as text.
+- **Text effects and lists** (`setTextOutline`, `setTextShadow`, `setFeather`, `setMargins`, `setList`): an
+  outline round the letters, a shadow behind them, a soft edge, the space inside a box, and every list style
+  ProPresenter offers (seven bullets, and 1 a A i I numbering with "(", "." or ")"). Each is checked against
+  a test sheet ProPresenter 21 made: the outline and every list style come out character for character as
+  ProPresenter wrote them. A list or an outline is kept when the words change, and a list's markers are not
+  read as words. The model reads all of them back, with the box's shape.
 - **Linked boxes.** A box can take its words, colour, picture or visibility from elsewhere: the slide's
   label, a timer, the clock, another slide. `linksOf` names each link in plain words, and a box linked to
   its own slide's label reads as the label (`showsOwnLabel`), since that is what ProPresenter shows.

@@ -1,4 +1,4 @@
-import { readRangeFont, writeRangeFont, boldOf, escape, readableText } from "./rtf.js";
+import { readRangeFont, writeRangeFont, boldOf, escape, readableText, listRtf } from "./rtf.js";
 import { freshCopy } from "./elements.js";
 
 // What ProPresenter's slide editor changes on a box, written the way ProPresenter writes it. Where it keeps a
@@ -250,4 +250,43 @@ export function setMargins(el, m) {
   const all = typeof m === "number" ? { left: m, right: m, top: m, bottom: m } : m ?? {};
   for (const [k, v] of Object.entries(all)) if (!["left", "right", "top", "bottom"].includes(k) || !(typeof v === "number" && v >= 0 && v <= 2000)) throw new Error("Margins are left, right, top and bottom, each 0 to 2000.");
   t.margins = { ...(t.margins ?? {}), ...all };
+}
+
+// ProPresenter's list styles by number_type, as model.js reads them back: the bullets by name, then 1, a, A, i, I.
+const LIST_TYPES = ["box", "check", "circle", "diamond", "disc", "hyphen", "square", "1", "a", "A", "i", "I"];
+
+/**
+ * A list on a text box, or "none". A style is a bullet (box, check, circle, diamond, disc, hyphen, square) or
+ * a number (1, a, A, i, I) with "(" before and "." or ")" after, as ProPresenter offers them: "1.", "(a)",
+ * "A)". `start` is the first number; `indent` the hanging indent in points (ProPresenter's 80 unless the box
+ * already has one). Written in the RTF and the paragraph style both, as ProPresenter writes it.
+ * @param {any} el
+ * @param {"none" | null | string | { style: string, start?: number, indent?: number }} spec
+ */
+export function setList(el, spec) {
+  const t = textOfBox(el);
+  const ps = (t.attributes.paragraph_style ??= {});
+  if (spec === "none" || spec === null) {
+    setRtf(t, listRtf(rtfOf(t), null));
+    // The indent and tab stops go too when they are the ones a list writes; a box's own are kept.
+    const fromList = ps.tab_stops?.length === 2 && ps.tab_stops[0].location === 1 && ps.tab_stops[1].location === ps.head_indent;
+    if (fromList) for (const k of ["head_indent", "tab_stops"]) delete ps[k];
+    ps.text_list = {};
+    delete ps.text_lists;
+    return;
+  }
+  const { style, start = 1, indent = ps.head_indent || 80 } = typeof spec === "string" ? { style: spec } : spec ?? {};
+  const m = /^(\(?)(1|a|A|i|I)([.)]?)$/.exec(style ?? "");
+  const bullet = LIST_TYPES.indexOf(style);
+  if (!m && !(bullet >= 0 && bullet < 7)) throw new Error(`A list is a bullet (${LIST_TYPES.slice(0, 7).join(", ")}) or a number like 1. (a) A) i., or "none".`);
+  if (!(Number.isInteger(start) && start >= 1 && start <= 9999)) throw new Error("A list starts at a whole number from 1.");
+  if (!(typeof indent === "number" && indent > 0 && indent <= 1000)) throw new Error("A list's indent is above 0 and at most 1000 points.");
+  const list = m
+    ? { number_type: LIST_TYPES.indexOf(m[2]), ...(m[1] ? { prefix: m[1] } : {}), ...(m[3] ? { postfix: m[3] } : {}), starting_number: start }
+    : { number_type: bullet, starting_number: start };
+  setRtf(t, listRtf(rtfOf(t), { ...list, indent }));
+  ps.head_indent = indent;
+  ps.tab_stops = [{ location: 1 }, { location: indent, alignment: 4 }];
+  ps.text_list = { is_enabled: true, ...list };
+  ps.text_lists = [list];
 }

@@ -23,6 +23,7 @@ export function boldOf(name: string): string;
 export function buildRtf(templateRtf: string, runs: Run[], regular: string, bold: string): string;
 export function buildRanges(runs: Run[], regular: RangeFont): { range: { start?: number; end: number }; _unknown_12: Uint8Array[] }[];
 export function plainText(rtf: string): string;
+export function listRtf(rtf: string, list: { number_type?: number; prefix?: string; postfix?: string; starting_number?: number; indent: number } | null, like?: string): string;
 export function readableText(rtf: string): string;
 
 export interface UnknownField { type: string; field: number; wireType: number; path: string }
@@ -166,3 +167,4 @@ export function setTextOutline(el: Msg, outline: { width?: number; color?: strin
 export function setTextShadow(el: Msg, on: boolean): void;
 export function setFeather(el: Msg, amount: number | "none" | null): void;
 export function setMargins(el: Msg, m: number | { left?: number; right?: number; top?: number; bottom?: number }): void;
+export function setList(el: Msg, spec: "none" | null | string | { style: string; start?: number; indent?: number }): void;

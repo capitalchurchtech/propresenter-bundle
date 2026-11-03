@@ -138,3 +138,47 @@ test("an outline round the letters, as ProPresenter writes it, kept when the wor
   assert.throws(() => setTextOutline(x.wrapper, { width: 99, color: "#000000" }), /at most 50/);
   stillGood(schema, doc);
 });
+
+test("a list, as ProPresenter 21 writes one: list table, hanging indent, a marker on each line, kept when the words change", async () => {
+  const { setList, setText, markdownRuns, readableText } = await import("../src/index.js");
+  const { doc, schema } = open("show-template.pro");
+  const x = firstText(doc);
+  setText(x.wrapper, markdownRuns("One\nTwo"));
+  setList(x.wrapper, "1.");
+  // The table ProPresenter wrote for "1." on its own test sheet, character for character.
+  assert.ok(rtf(x).includes("{\\*\\listtable{\\list\\listtemplateid1\\listhybrid{\\listlevel\\levelnfc0\\levelnfcn0\\leveljc0\\leveljcn0\\levelfollow0\\levelstartat1\\levelspace360\\levelindent0{\\*\\levelmarker \\{decimal\\}.}{\\leveltext\\leveltemplateid1\\'02\\'00.;}{\\levelnumbers\\'01;}\\fi-360\\li720\\lin720 }{\\listname ;}\\listid1}}\n{\\*\\listoverridetable{\\listoverride\\listid1\\listoverridecount0\\ls1}}\n"));
+  assert.match(rtf(x), /\\pard\\tx20\\tx1600(\\pardeftab\d+)?\\li1600\\fi-1600/);
+  assert.match(rtf(x), /\{\\listtext\t1\.\t\}One\\\n\\ls1\\ilvl0\{\\listtext\t2\.\t\}Two/);
+  assert.equal(readableText(rtf(x)), "One\nTwo", "a marker is not words");
+  const ps = x.element.text.attributes.paragraph_style;
+  assert.deepEqual([ps.text_list, ps.head_indent, ps.tab_stops], [{ is_enabled: true, number_type: 7, postfix: ".", starting_number: 1 }, 80, [{ location: 1 }, { location: 80, alignment: 4 }]]);
+
+  setList(x.wrapper, { style: "(A)", start: 3 });
+  assert.ok(rtf(x).includes("{\\*\\levelmarker (\\{upper-alpha\\})}{\\leveltext\\leveltemplateid1\\'03(\\'00);}{\\levelnumbers\\'02;}"));
+  assert.match(rtf(x), /\{\\listtext\t\(C\)\t\}One/);
+  setText(x.wrapper, markdownRuns("One\nTwo\nThree"));
+  assert.match(rtf(x), /\{\\listtext\t\(E\)\t\}Three/, "new words get the markers again");
+  assert.equal(rtf(x).match(/\\listtable/g).length, 1);
+  const box = () => toModel(doc).groups.flatMap((g) => g.slides).flatMap((s) => s.elements).find((e) => e.uuid === x.element.uuid.string);
+  assert.deepEqual(box().list, { style: "(A)", start: 3 });
+
+  setList(x.wrapper, "disc");
+  assert.ok(rtf(x).includes("{\\leveltext\\leveltemplateid1\\'01\\uc0\\u8226 ;}{\\levelnumbers;}"));
+  assert.match(rtf(x), /\{\\listtext\t\\uc0\\u8226 \t\}One/);
+  stillGood(schema, doc);
+
+  setList(x.wrapper, "none");
+  assert.doesNotMatch(rtf(x), /listtable|listtext|\\ls1|\\tx20|\\fi-/);
+  assert.deepEqual([x.element.text.attributes.paragraph_style.text_list, box().list], [{}, undefined]);
+  assert.throws(() => setList(x.wrapper, "roman"), /bullet .* or a number/);
+  assert.throws(() => setList(x.wrapper, { style: "1.", start: 0 }), /whole number from 1/);
+  stillGood(schema, doc);
+});
+
+test("a list's marker styled apart from its words keeps that style when the list is rebuilt", async () => {
+  const { listRtf } = await import("../src/index.js");
+  const bold = "{\\rtf1\\ansi\n{\\colortbl;\\red255\\green255\\blue255;}\n\\deftab1300\n\\pard\\pardeftab1300\\pardirnatural\n\n\\f0\\fs80 \\cf2 {\\listtext\t\n\\f1\\b 1.\n\\f0\\b0 \t}One\\\nTwo}";
+  const out = listRtf(bold, { number_type: 9, postfix: ")", starting_number: 1, indent: 80 });
+  assert.match(out, /\{\\listtext\t\n\\f1\\b A\)\n\\f0\\b0 \t\}One\\\n\\ls1\\ilvl0\{\\listtext\t\n\\f1\\b B\)\n\\f0\\b0 \t\}Two/);
+  assert.equal(listRtf("{\\rtf1 \\cf2 plain}", null), "{\\rtf1 \\cf2 plain}", "a box with no list is left alone");
+});
