@@ -168,3 +168,11 @@ export function setTextShadow(el: Msg, on: boolean): void;
 export function setFeather(el: Msg, amount: number | "none" | null): void;
 export function setMargins(el: Msg, m: number | { left?: number; right?: number; top?: number; bottom?: number }): void;
 export function setList(el: Msg, spec: "none" | null | string | { style: string; start?: number; indent?: number }): void;
+export interface DrawContext { picture?: (file: string, path: string | null) => string | null; label?: string; timerSeconds?: Record<string, number>; props?: Map<string, Msg>; macros?: Map<string, Msg> }
+export interface DrawnSlide { html: string; width: number; height: number; pictures: string[]; fonts: string[] }
+export function drawSlide(baseSlide: Msg, actions: Msg[], ctx?: DrawContext): DrawnSlide;
+export function drawPresentation(doc: Msg, ctx?: DrawContext): Array<DrawnSlide & { id: string | null; group: string | null; label: string; enabled: boolean }>;
+export function fontFaces(names: Iterable<string>): string;
+export function parseRtf(rtf: string): { paras: Array<{ align: string | null; runs: Array<{ text: string } & Record<string, unknown>> }>; sl: number | null; lead: number };
+export function mediaFile(url: Msg): { name: string | null; path: string | null };
+export const DRAW_CSS: string;

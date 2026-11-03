@@ -69,6 +69,14 @@ permission" line, then the licence number); `${Artist}` is the song's `ccli.arti
 - **Shapes:** `path.shape.type` 1 rectangle, 2 ellipse, 8 custom. A custom path's points are
   fractions of the box; each segment is a cubic Bézier from one point's `q1` to the next point's
   `q0`. Clip the box to it.
+- **Outline patterns:** `stroke.style` 0 is solid; 1 square dots (one width on, one off); 2 dashes
+  (two on, two off); 3 long dashes (four on, two off), each in multiples of `stroke.width`.
+- **Feather** (`feather.enable`, `feather.radius` 0 to 1) fades the box's **fill**, not its words,
+  inward from every edge. The fade runs about 2.2 x the radius x the box's shorter side; where the
+  fades from opposite edges meet, the fill thins to a glow. That fits ProPresenter closely up to a
+  radius of about 0.35 (a 102 px box: fully solid in the middle up to 0.13, about 90% at 0.26, 60% at
+  0.34). Above that ProPresenter's glow is not monotonic: fainter at 0.4 to 0.6 (20-30%) than at 0.8
+  to 0.95 (about 50%). Measured on one box height only.
 
 ## The line mask (the "tag behind each line")
 
@@ -80,7 +88,9 @@ permission" line, then the licence number); `${Artist}` is the song's `ccli.arti
   between tags is the line pitch minus that.
 - The text **margins** (`text.margins`) place the words inside the box; the mask hugs the words and
   ignores the margins. Mixing the two makes every tag too large. The offsets grow the tag *out*
-  from the words; they do not push the words in, so a tag can reach past the margins.
+  from the words; they do not push the words in, so a tag can reach past the margins. That holds
+  for every style, full width included: the words wrap at the box's width less its margins, never
+  less the offsets (a 61 px `width_offset` taken off the words breaks "MATTHEW" mid-word).
 - `vertical_offset` moves the tag, not the words, by that many points; positive is down.
 - **A tag never reaches past its box.** Where the words plus the offsets would cross the box's edge,
   the tag is cut at the edge (a right-aligned title with a small right margin and a wide offset has

@@ -200,7 +200,8 @@ function colorTable(rtf) {
 }
 
 /**
- * An outline round the letters (not the box): its width in points and colour, or "none". ProPresenter writes
+ * An outline round the letters (not the box): its width, as ProPresenter's editor shows it (a percent of the font
+ * size, per docs/RENDERING.md), and colour, or "none". ProPresenter writes
  * it twice: the attributes' stroke_width (negative: outline and fill both) and stroke_color, and on every run
  * \\outl0\\strokewidth{-20 x width}\\strokec{n}, n its entry in the RTF colour table (added to both forms).
  */
@@ -216,7 +217,7 @@ export function setTextOutline(el, outline) {
   const c = parseColor(outline?.color ?? "#000000");
   const width = outline?.width ?? 2;
   if (!c) throw new Error("An outline needs a colour.");
-  if (!(width > 0 && width <= 50)) throw new Error("An outline's width is above 0 and at most 50 points.");
+  if (!(width > 0 && width <= 50)) throw new Error("An outline's width is above 0 and at most 50 (a percent of the type size, as ProPresenter shows it).");
   const [r, g, b] = [byte(c.red), byte(c.green), byte(c.blue)];
   const entries = colorTable(rtf);
   const n = entries.length + 1;

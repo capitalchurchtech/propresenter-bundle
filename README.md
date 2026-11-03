@@ -46,6 +46,12 @@ to say which files it reads.
   a test sheet ProPresenter 21 made: the outline and every list style come out character for character as
   ProPresenter wrote them. A list or an outline is kept when the words change, and a list's markers are not
   read as words. The model reads all of them back, with the box's shape.
+- **Draw slides** (`drawSlide`, `drawPresentation`, `DRAW_CSS`, `fontFaces`, and `draw-layout` for
+  the browser): a slide as HTML, every box where ProPresenter puts it, in the fonts installed where
+  it is shown, with background media carried from slide to slide as ProPresenter plays them. Pure: the
+  caller says where each picture can be had. `layoutSlide` (from `propresenter-bundle/draw-layout`)
+  finishes the layout in the page with the fonts' real metrics. The rules, and how close they come,
+  are in `docs/RENDERING.md`; line breaks can still differ where this computer's fonts differ.
 - **Linked boxes.** A box can take its words, colour, picture or visibility from elsewhere: the slide's
   label, a timer, the clock, another slide. `linksOf` names each link in plain words, and a box linked to
   its own slide's label reads as the label (`showsOwnLabel`), since that is what ProPresenter shows.

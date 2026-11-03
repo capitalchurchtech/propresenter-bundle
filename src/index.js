@@ -19,3 +19,4 @@ export { parseColor, setTextColor, setAlignment, setVerticalAlignment, setTextFi
 export { openTheme, decodeTheme, encodeTheme, checkThemeBytes, themeModel, readThemeFile, writeTheme, themeWorkspace, themeSlideAsCue } from "./theme.js";
 export { diffModels } from "./diff.js";
 export { checkFile } from "./check.js";
+export { drawSlide, drawPresentation, fontFaces, parseRtf, mediaFile, DRAW_CSS } from "./draw.js";
