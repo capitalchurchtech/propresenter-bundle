@@ -116,3 +116,25 @@ test("a slide's notes: set with line breaks and any characters, read back as tex
   assert.equal(notesOf(action), "");
   assert.throws(() => setNotes({}, "x"), /Only a presentation slide/);
 });
+
+test("an outline round the letters, as ProPresenter writes it, kept when the words change; shadow, feather, margins", async () => {
+  const { setTextOutline, setTextShadow, setFeather, setMargins, setText, markdownRuns } = await import("../src/index.js");
+  const { doc, schema } = open("show-template.pro");
+  const x = firstText(doc);
+  setTextOutline(x.wrapper, { width: 2, color: "#ffffff" });
+  assert.match(rtf(x), /\\cf2 \\outl0\\strokewidth-40 \\strokec3 /, "ProPresenter's own spacing");
+  assert.match(rtf(x), /\{\\colortbl;\\red255\\green255\\blue255;\\red255\\green255\\blue255;\\red255\\green255\\blue255;\}/, "the outline's colour added as entry 3");
+  assert.deepEqual([x.element.text.attributes.stroke_width, x.element.text.attributes.stroke_color.red], [-2, 1]);
+  setText(x.wrapper, markdownRuns("New words"));
+  assert.match(rtf(x), /\\outl0\\strokewidth-40 \\strokec3 New words/, "rebuilt words keep the outline");
+  setTextOutline(x.wrapper, "none");
+  assert.doesNotMatch(rtf(x), /outl0/);
+  setTextShadow(x.wrapper, true);
+  setFeather(x.wrapper, 0.4);
+  setMargins(x.wrapper, { left: 20, right: 20 });
+  const box = toModel(doc).groups.flatMap((g) => g.slides).flatMap((s) => s.elements).find((e) => e.uuid === x.element.uuid.string);
+  assert.deepEqual([box.textShadow?.radius, box.feather, box.margins?.left, box.textOutline], [5, 0.4, 20, undefined]);
+  assert.throws(() => setFeather(x.wrapper, 3), /0 \(none\) to 1/);
+  assert.throws(() => setTextOutline(x.wrapper, { width: 99, color: "#000000" }), /at most 50/);
+  stillGood(schema, doc);
+});

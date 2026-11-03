@@ -110,7 +110,31 @@ export function elementModel(el, roleOf) {
     caps: ranges.some((c) => c.capitalization) || !!x.text?.attributes?.capitalization,
     media: fileOf(x.fill?.media?.url),
     links: linksOf(el).map((l) => l.name),
+    ...boxEffects(x),
   };
+}
+
+const LIST_TYPES = ["box", "check", "circle", "diamond", "disc", "hyphen", "square", "1", "a", "A", "i", "I"];
+const SHAPES = ["unknown", "rectangle", "ellipse", "isosceles triangle", "right triangle", "rhombus", "star", "polygon", "custom", "right arrow", "double arrow", "rounded rectangle"];
+const num = (v) => (typeof v === "number" ? Math.round(v * 100) / 100 : v);
+
+/** The text and box effects the slide editor sets, read the way a person would describe them. */
+function boxEffects(x) {
+  const a = x.text?.attributes ?? {};
+  const list = a.paragraph_style?.text_list;
+  const out = {};
+  if (list?.is_enabled) {
+    const type = LIST_TYPES[list.number_type ?? 0] ?? "box";
+    out.list = { style: `${list.prefix ?? ""}${type}${list.postfix ?? ""}`, start: list.starting_number ?? 1 };
+  }
+  if (a.stroke_width) out.textOutline = { width: Math.abs(a.stroke_width), color: colorHex(a.stroke_color) };
+  if (x.text?.shadow?.enable) out.textShadow = { color: colorHex(x.text.shadow.color), radius: num(x.text.shadow.radius), offset: num(x.text.shadow.offset) };
+  if (x.feather?.enable) out.feather = num(x.feather.radius);
+  const m = x.text?.margins;
+  if (m && (m.left || m.right || m.top || m.bottom)) out.margins = { left: num(m.left ?? 0), right: num(m.right ?? 0), top: num(m.top ?? 0), bottom: num(m.bottom ?? 0) };
+  const shape = x.path?.shape?.type;
+  if (shape && shape !== 1) out.shape = SHAPES[shape] ?? "custom";
+  return out;
 }
 
 /** The macros a list of actions fires, by name and id. Shared with themes. */

@@ -189,3 +189,65 @@ export function setNotes(action, text) {
   if (!text.trim()) { delete p.notes; return; }
   p.notes = { rtf_data: Buffer.from(`${NOTES_HEAD}${escape(text)}}`, "latin1"), attributes: {} };
 }
+
+/** A run's outline, as ProPresenter writes it after the run's colour. */
+export const OUTLINE = /\\outl0\\strokewidth-?\d+ ?\\strokec\d+ ?/g;
+
+/** The colour table's entries, so one can be added and pointed at by number (\\cf2, \\strokec3). */
+function colorTable(rtf) {
+  const m = /\{\\colortbl;([^}]*)\}/.exec(rtf);
+  return m ? m[1].split(";").filter((e) => e.trim()) : [];
+}
+
+/**
+ * An outline round the letters (not the box): its width in points and colour, or "none". ProPresenter writes
+ * it twice: the attributes' stroke_width (negative: outline and fill both) and stroke_color, and on every run
+ * \\outl0\\strokewidth{-20 x width}\\strokec{n}, n its entry in the RTF colour table (added to both forms).
+ */
+export function setTextOutline(el, outline) {
+  const t = textOfBox(el);
+  let rtf = rtfOf(t).replace(OUTLINE, "");
+  if (outline === "none" || outline === null) {
+    setRtf(t, rtf);
+    t.attributes.stroke_width = 0;
+    delete t.attributes.stroke_color;
+    return;
+  }
+  const c = parseColor(outline?.color ?? "#000000");
+  const width = outline?.width ?? 2;
+  if (!c) throw new Error("An outline needs a colour.");
+  if (!(width > 0 && width <= 50)) throw new Error("An outline's width is above 0 and at most 50 points.");
+  const [r, g, b] = [byte(c.red), byte(c.green), byte(c.blue)];
+  const entries = colorTable(rtf);
+  const n = entries.length + 1;
+  const per = (v) => Math.round((v / 255) * 100000);
+  rtf = rtf.replace(/(\{\\colortbl;[^}]*)\}/, `$1\\red${r}\\green${g}\\blue${b};}`);
+  rtf = rtf.replace(/(\{\\\*\\expandedcolortbl;[^}]*)\}/, `$1\\csgenericrgb\\c${per(r)}\\c${per(g)}\\c${per(b)};}`);
+  // ProPresenter's own spacing: "\\cf2 \\outl0\\strokewidth-40 \\strokec3 ".
+  rtf = rtf.replace(/(\\cf\d+) ?/g, `$1 \\outl0\\strokewidth${-Math.round(width * 20)} \\strokec${n} `);
+  setRtf(t, rtf);
+  t.attributes.stroke_width = -width;
+  t.attributes.stroke_color = c;
+}
+
+/** A shadow behind the letters: true for ProPresenter's default (black, 5 points, down and right), false for none. */
+export function setTextShadow(el, on) {
+  const t = textOfBox(el);
+  t.shadow = { style: 0, angle: 315, offset: 5, radius: 5, color: { red: 0, green: 0, blue: 0, alpha: 1 }, opacity: 0.75, ...(t.shadow ?? {}), enable: Boolean(on) };
+}
+
+/** A soft edge on the box, as a fraction from 0 (hard) to 1, or "none". */
+export function setFeather(el, amount) {
+  const x = el.element;
+  if (amount === "none" || amount === null || amount === 0) { x.feather = { ...(x.feather ?? {}), enable: false }; return; }
+  if (!(typeof amount === "number" && amount > 0 && amount <= 1)) throw new Error("Feather is 0 (none) to 1.");
+  x.feather = { ...(x.feather ?? {}), radius: amount, enable: true };
+}
+
+/** Space between the box's edge and its words, in slide pixels, each side or all four. */
+export function setMargins(el, m) {
+  const t = textOfBox(el);
+  const all = typeof m === "number" ? { left: m, right: m, top: m, bottom: m } : m ?? {};
+  for (const [k, v] of Object.entries(all)) if (!["left", "right", "top", "bottom"].includes(k) || !(typeof v === "number" && v >= 0 && v <= 2000)) throw new Error("Margins are left, right, top and bottom, each 0 to 2000.");
+  t.margins = { ...(t.margins ?? {}), ...all };
+}

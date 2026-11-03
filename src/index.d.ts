@@ -70,6 +70,9 @@ export interface ElementModel {
   text: string; fontName: string | null; fontFamily: string | null; fontSize: number | null; caps: boolean; media: string | null;
   /** What the box takes from elsewhere, in plain words: "slide label", "timer", "clock"... */
   links: string[];
+  list?: { style: string; start: number }; textOutline?: { width: number; color: string | null };
+  textShadow?: { color: string | null; radius: number; offset: number }; feather?: number;
+  margins?: { left: number; right: number; top: number; bottom: number }; shape?: string;
 }
 export interface SlideModel {
   uuid: string | null; label: string; enabled: boolean; text: string[]; elements: ElementModel[];
@@ -158,3 +161,8 @@ export function setNotes(action: Msg, text: string): void;
 
 export function themeWorkspace(doc: Msg): string | null;
 export function themeSlideAsCue(file: OpenedTheme, doc: Msg, index: number, opts: { workspace: string; label?: string }): { cue: Msg; media: BundleEntry[] };
+
+export function setTextOutline(el: Msg, outline: { width?: number; color?: string } | "none" | null): void;
+export function setTextShadow(el: Msg, on: boolean): void;
+export function setFeather(el: Msg, amount: number | "none" | null): void;
+export function setMargins(el: Msg, m: number | { left?: number; right?: number; top?: number; bottom?: number }): void;
