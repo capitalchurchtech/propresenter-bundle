@@ -24,7 +24,7 @@ export function buildRtf(templateRtf: string, runs: Run[], regular: string, bold
 export function buildRanges(runs: Run[], regular: RangeFont): { range: { start?: number; end: number }; _unknown_12: Uint8Array[] }[];
 export function plainText(rtf: string): string;
 export function listRtf(rtf: string, list: { number_type?: number; prefix?: string; postfix?: string; starting_number?: number; indent: number } | null, like?: string): string;
-export function readableText(rtf: string): string;
+export function readableText(rtf: string, opts?: { listMarkers?: boolean }): string;
 
 export interface UnknownField { type: string; field: number; wireType: number; path: string }
 export function findUnknownFields(top: protobuf.Type, buf: Uint8Array): UnknownField[];

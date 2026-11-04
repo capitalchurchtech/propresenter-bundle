@@ -119,11 +119,33 @@ export function buildRanges(runs, regular) {
 const LIST_TEXT = /\{\\listtext[^{}]*\}/g;
 
 /**
+ * Every \\uN as its character. Cocoa writes \\uc0 once and then a run of \\uN (Hebrew with its vowel
+ * points is six in a row); \\ucN says how many fallback characters follow each \\uN, and those are skipped.
+ * Negative N wraps (UTF-16 above 32767), and a surrogate pair arrives as two \\uN, so each is one code unit.
+ * @param {string} body
+ */
+function decodeUnicode(body) {
+  let skip = 1; // RTF's default, until a \\ucN says otherwise
+  // Not after a backslash: "\\\\u" is a backslash the person typed, then a "u".
+  return body.replace(/(?<!\\)\\uc(\d+) ?|(?<!\\)\\u(-?\d+) ?((?:\\'[0-9a-fA-F]{2}|[^\\{}])*)/g, (m, uc, n, after) => {
+    if (uc !== undefined) {
+      skip = Number(uc);
+      return "";
+    }
+    const code = Number(n) < 0 ? Number(n) + 65536 : Number(n);
+    // Drop the fallback characters (a \\'hh counts as one), keep the rest.
+    let rest = after;
+    for (let i = 0; i < skip && rest; i++) rest = rest.startsWith("\\'") ? rest.slice(4) : rest.slice(1);
+    return String.fromCharCode(code) + rest;
+  });
+}
+
+/**
  * The words a box draws, from its RTF: everything after the first colour switch, control words and
  * braces removed. A line break comes back as nothing, as ProPresenter's own plain text does.
  * @param {string} rtf
  */
-export const plainText = (rtf) => rtf.split(/\\cf\d+ /).slice(1).join("").replace(LIST_TEXT, "").replace(/\\'([0-9a-f]{2})/gi, (_, h) => new TextDecoder("windows-1252").decode(Uint8Array.of(parseInt(h, 16)))).replace(/\\[a-z]+-?\d* ?/gi, "").replace(/[{}\\\n]/g, "");
+export const plainText = (rtf) => decodeUnicode(rtf.split(/\\cf\d+ /).slice(1).join("").replace(LIST_TEXT, "")).replace(/\\'([0-9a-f]{2})/gi, (_, h) => new TextDecoder("windows-1252").decode(Uint8Array.of(parseInt(h, 16)))).replace(/\\[a-z]+-?\d* ?/gi, "").replace(/[{}\\\n]/g, "");
 
 /**
  * The same, keeping line breaks and decoding \uN escapes, for showing a person what a slide says.
@@ -132,18 +154,21 @@ export const plainText = (rtf) => rtf.split(/\\cf\d+ /).slice(1).join("").replac
 const CP1252 = new TextDecoder("windows-1252");
 const ESCAPED = { "{": "\ue001", "}": "\ue002", "\\": "\ue003" };
 const UNESCAPED = { "\ue001": "{", "\ue002": "}", "\ue003": "\\" };
-export function readableText(rtf) {
-  const body = rtf.split(/\\cf\d+ /).slice(1).join("").replace(LIST_TEXT, "");
-  return body
-    .replace(/\\uc0\\u(-?\d+) ?/g, (_, n) => String.fromCharCode(Number(n) < 0 ? Number(n) + 65536 : Number(n)))
+export function readableText(rtf, { listMarkers = false } = {}) {
+  // A list's markers are left out (they are not words anyone typed) unless asked for: ProPresenter's own
+  // API puts them in a slide's text, so a search index matching it keeps them.
+  const body = rtf.split(/\\cf\d+ /).slice(1).join("").replace(LIST_TEXT, (m) => (listMarkers ? m.slice("{\\listtext".length, -1) : ""));
+  return decodeUnicode(body)
     // \'hh: one byte in the Windows-1252 code page, which is how Cocoa writes curly quotes and dashes.
     .replace(/\\'([0-9a-f]{2})/gi, (_, h) => CP1252.decode(Uint8Array.of(parseInt(h, 16))))
     .replace(/\\\n/g, "\u0001") // a line break the person typed
     .replace(/[\u2028\u2029]/g, "\u0001") // Shift-Return (line separator), and a paragraph separator
-    .replace(/\n/g, "") // RTF's own formatting newlines
+    // RTF's own formatting newlines. Each still ends a control word ("\\kerning0", newline, "2 Corinthians"
+    // must not become "\\kerning02 Corinthians"), so it goes only after the control words are gone.
+    .replace(/\n/g, "\u0002")
     .replace(/\\([\\{}])/g, (_, c) => ESCAPED[c]) // literal braces and backslashes the person typed
     .replace(/\\[a-z]+-?\d* ?/gi, "")
-    .replace(/[{}]/g, "")
+    .replace(/[{}\u0002]/g, "")
     .replace(/[\ue001-\ue003]/g, (c) => UNESCAPED[c])
     .replace(/\u0001/g, "\n")
     .replace(/\n+$/, "");

@@ -54,3 +54,18 @@ test("Cocoa's one-byte escapes for curly quotes and dashes are decoded", () => {
   assert.equal(readableText(rtf), "‘Cause it’s “here” – now");
   assert.equal(plainText(rtf), "‘Cause it’s “here” – now");
 });
+
+test("readableText: a run of \\uN after one \\uc0, \\ucN fallbacks skipped, a newline ending a control word, list markers on request", async () => {
+  const { readableText, plainText } = await import("../src/rtf.js");
+  const r = (body) => `{\\rtf1{\\colortbl;\\red0\\green0\\blue0;}\\f0 \\cf1 ${body}}`;
+  // Hebrew with its points: Cocoa writes \uc0 once, then six \uN in a row.
+  assert.equal(readableText(r("\\uc0\\u1513 \\u1473 \\u1464 \\u1489 \\u1463 \\u1514 ")), "\u05e9\u05c1\u05b8\u05d1\u05b7\u05ea");
+  assert.equal(plainText(r("\\uc0\\u1513 \\u1514 ")), "\u05e9\u05ea");
+  assert.equal(readableText(r("\\uc1\\u1513?\\u1514\\'e9z")), "\u05e9\u05eaz", "one fallback character after each, a \\'hh counting as one");
+  assert.equal(readableText(r("\\uc0\\u-10179 \\u-8704 ")), "\u{1F600}", "a surrogate pair");
+  assert.equal(readableText(r("a\\\\u1513 b")), "a\\u1513 b", "a backslash the person typed is not an escape");
+  assert.equal(readableText(r("\\kerning0\n2 Corinthians")), "2 Corinthians", "the newline ends \\kerning0: the 2 is a word");
+  const list = r("{\\listtext\t1.\t}first\\\n{\\listtext\t2.\t}second");
+  assert.equal(readableText(list), "first\nsecond");
+  assert.equal(readableText(list, { listMarkers: true }), "\t1.\tfirst\n\t2.\tsecond");
+});
