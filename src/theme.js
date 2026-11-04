@@ -3,6 +3,8 @@ import { loadSchema, OBJECT_OPTIONS, deepEqual } from "./schema.js";
 import { addPlaceholders, findUnknownFields } from "./placeholders.js";
 import { createRoles } from "./roles.js";
 import { elementModel, macrosOf, actionOrderOf } from "./model.js";
+import { uuid, freshCopy, mediaUrl } from "./elements.js";
+import { workspaceOf, mediaEntryName } from "./media.js";
 
 // Themes (.protheme): a zip of <name>/Theme, an rv.data.Template.Document, beside <name>/Assets/ holding
 // the pictures its slides use. Read them, check them, and write a changed copy.
@@ -114,4 +116,67 @@ export async function writeTheme(file, doc, schema) {
   const check = checkThemeBytes(data);
   if (!check.ok) throw new Error(`The changed theme did not pass the check (${check.error ?? "unstable on re-read"}); nothing was written.`);
   return writeBundle(file.entries.map((e) => (e.name === file.themeEntry ? { name: e.name, data } : e)));
+}
+
+/**
+ * The workspace a theme's pictures belong under: the one its library-root URLs name, else the folder its
+ * Themes folder sits in (a theme's own pictures are under <workspace>/Themes/<name>/Assets).
+ */
+export function themeWorkspace(doc) {
+  const direct = workspaceOf(doc);
+  if (direct) return direct;
+  const find = (v) => {
+    if (!v || typeof v !== "object" || v instanceof Uint8Array) return null;
+    let abs = "";
+    if (typeof v.absolute_string === "string") {
+      try {
+        abs = decodeURI(v.absolute_string.replace(/^file:\/\//, ""));
+      } catch {
+        abs = ""; // a malformed address says nothing about the workspace
+      }
+    }
+    if (abs.includes("/Themes/")) return abs.slice(0, abs.lastIndexOf("/Themes/"));
+    for (const x of Array.isArray(v) ? v : Object.values(v)) { const f = find(x); if (f) return f; }
+    return null;
+  };
+  return find(doc);
+}
+
+/**
+ * A theme slide as a presentation slide: its boxes and its own actions (a background, say) with fresh ids.
+ * A picture the theme keeps in its own Assets (root 12, relative to the theme) means nothing outside it, so
+ * it is pointed at the workspace's Media/Assets, where ProPresenter puts a bundle's media on import, and its
+ * bytes are returned to go into the bundle under that name.
+ * @param {ReturnType<typeof openTheme>} file
+ * @param {any} doc the decoded theme
+ * @param {number} index the theme slide, from 0
+ * @param {{ workspace: string, label?: string }} opts
+ */
+export function themeSlideAsCue(file, doc, index, { workspace, label } = {}) {
+  const slide = doc.slides?.[index];
+  if (!slide) throw new Error(`No theme slide ${index + 1}; the theme has ${doc.slides?.length ?? 0}.`);
+  if (!workspace) throw new Error("Give the workspace the theme's pictures belong under.");
+  const name = label ?? slide.name ?? "";
+  const cue = {
+    uuid: uuid(), name, isEnabled: true,
+    actions: [
+      { uuid: uuid(), isEnabled: true, type: 11, label: { text: name }, slide: { presentation: { base_slide: freshCopy(slide.base_slide ?? {}) } } },
+      ...(slide.actions ?? []).map((a) => freshCopy(a)),
+    ],
+  };
+  const media = new Map();
+  const repoint = (u) => {
+    if (u?.local?.root !== 12 || !u.local.path) return u;
+    const pic = u.local.path.split("/").pop();
+    const entry = file.entries.find((e) => e.name.endsWith(`/Assets/${pic}`));
+    if (entry) media.set(pic, entry.data);
+    return mediaUrl(pic, workspace);
+  };
+  const walk = (v) => {
+    if (!v || typeof v !== "object" || v instanceof Uint8Array) return;
+    for (const k of ["url", "local_url"]) if (v[k]?.local) v[k] = repoint(v[k]);
+    for (const x of Array.isArray(v) ? v : Object.values(v)) walk(x);
+  };
+  walk(cue);
+  return { cue, media: [...media].map(([pic, data]) => ({ name: mediaEntryName(pic, workspace), data })) };
 }

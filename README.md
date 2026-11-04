@@ -31,11 +31,27 @@ to say which files it reads.
   fires, and the pictures in its Assets. `renameElement` renames a box in a theme or a presentation;
   `writeTheme` writes a changed copy with every picture exactly as it was, after the same check a
   presentation gets, and refuses a theme holding anything the schema can't read.
+  `themeSlideAsCue` makes a theme slide a presentation slide: its boxes and actions, and its own pictures
+  (kept relative to the theme) pointed at the workspace's media and returned to go into the bundle.
 - **The slide editor's box settings** (`setTextColor`, `setAlignment`, `setVerticalAlignment`, `setTextFit`,
   `setCapitals`, `setFont`, `setBoxStyle`, `arrangeBox`): each written where ProPresenter keeps it, in both
   places where it keeps two. Checked against how ProPresenter 21 wrote real files and re-read through the
   schema; not yet imported into ProPresenter and looked at. A font's bold is guessed from its name
   (`boldOf`), which is wrong for some faces (Georgia-Italic's bold is Georgia-BoldItalic).
+- **Line spacing and notes** (`setLineSpacing`, `notesOf`, `setNotes`): line spacing as ProPresenter 21 writes it
+  (`\sl` with `\slmult1` on every paragraph, and the paragraph style's multiple), and a slide's notes as text.
+- **Text effects and lists** (`setTextOutline`, `setTextShadow`, `setFeather`, `setMargins`, `setList`): an
+  outline round the letters, a shadow behind them, a soft edge, the space inside a box, and every list style
+  ProPresenter offers (seven bullets, and 1 a A i I numbering with "(", "." or ")"). Each is checked against
+  a test sheet ProPresenter 21 made: the outline and every list style come out character for character as
+  ProPresenter wrote them. A list or an outline is kept when the words change, and a list's markers are not
+  read as words. The model reads all of them back, with the box's shape.
+- **Draw slides** (`drawSlide`, `drawPresentation`, `DRAW_CSS`, `fontFaces`, and `draw-layout` for
+  the browser): a slide as HTML, every box where ProPresenter puts it, in the fonts installed where
+  it is shown, with background media carried from slide to slide as ProPresenter plays them. Pure: the
+  caller says where each picture can be had. `layoutSlide` (from `propresenter-bundle/draw-layout`)
+  finishes the layout in the page with the fonts' real metrics. The rules, and how close they come,
+  are in `docs/RENDERING.md`; line breaks can still differ where this computer's fonts differ.
 - **Linked boxes.** A box can take its words, colour, picture or visibility from elsewhere: the slide's
   label, a timer, the clock, another slide. `linksOf` names each link in plain words, and a box linked to
   its own slide's label reads as the label (`showsOwnLabel`), since that is what ProPresenter shows.

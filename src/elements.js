@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { buildRtf, buildRanges, readRangeFont, writeRangeFont, boldOf, plainText } from "./rtf.js";
+import { buildRtf, buildRanges, readRangeFont, writeRangeFont, boldOf, plainText, listRtf } from "./rtf.js";
 import { LINE_PADDING } from "./geometry.js";
 import { fallbackMetrics } from "./metrics.js";
 
@@ -63,7 +63,14 @@ export function setText(el, runs, size) {
     : { name: t.attributes?.font?.name ?? "HelveticaNeue", size: t.attributes?.font?.size ?? 40, bold: false, family: t.attributes?.font?.family ?? "Helvetica Neue" };
   // The theme's regular face, even when its sample text happened to start bold.
   const regular = { ...font, ...(size ? { size } : {}), bold: false, name: font.bold ? font.name.replace(/-Bold$/, "") || "HelveticaNeue" : font.name };
-  t.rtf_data = Buffer.from(buildRtf(rtf, runs, regular.name, boldOf(regular.name)), "latin1");
+  // AN OUTLINE ROUND THE LETTERS is on every run in the RTF as well as in the attributes; rebuilt words keep it.
+  const outline = /\\outl0\\strokewidth-?\d+ ?\\strokec\d+ ?/.exec(rtf)?.[0];
+  let built = buildRtf(rtf, runs, regular.name, boldOf(regular.name));
+  if (outline) built = built.replace(/(\\cf\d+) /g, `$1 ${outline.trimEnd()} `);
+  // A LIST is a marker at the start of every line, so new words get the list's markers again.
+  const list = t.attributes?.paragraph_style?.text_list;
+  if (list?.is_enabled) built = listRtf(built, { ...list, indent: t.attributes.paragraph_style.head_indent || 80 }, rtf);
+  t.rtf_data = Buffer.from(built, "latin1");
   // CAPITALISATION LIVES IN ITS OWN RANGE, as long as the old words. A box set in all caps shows its
   // new words in ordinary case if only the font ranges are rebuilt, so the range is carried over,
   // stretched to the new words.

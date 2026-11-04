@@ -130,7 +130,7 @@ function fixedTimes(zip) {
 function theme() {
   n = 0x2000;
   const assets = "/Users/example/Library/Application Support/RenewedVision/ProPresenter/Themes/Example Theme/Assets";
-  const bg = { element: { uuid: id(), name: "Background", bounds: { origin: { x: 0, y: 0 }, size: { width: 1920, height: 1080 } }, fill: { enable: true, media: { uuid: id(), url: { absolute_string: "file://" + encodeURI(`${assets}/example-bg.png`), platform: 1 }, image: { drawing: { natural_size: { width: 2, height: 2 } } } } } } };
+  const bg = { element: { uuid: id(), name: "Background", bounds: { origin: { x: 0, y: 0 }, size: { width: 1920, height: 1080 } }, fill: { enable: true, media: { uuid: id(), url: { absolute_string: "file://" + encodeURI(`${assets}/example-bg.png`), platform: 1, local: { root: 12, path: "Assets/example-bg.png" } }, image: { drawing: { natural_size: { width: 2, height: 2 } } } } } } };
   const slide = (name, elements) => ({ name, base_slide: { uuid: id(), size: { width: 1920, height: 1080 }, elements } });
   const doc = {
     application_info: { platform: 1, application: 1 },

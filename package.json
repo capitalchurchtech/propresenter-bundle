@@ -27,6 +27,9 @@
       "types": "./src/metrics.d.ts",
       "default": "./src/metrics.js"
     },
+    "./draw-layout": {
+      "default": "./src/draw-layout.js"
+    },
     "./script": {
       "default": "./src/script/index.js"
     },

@@ -49,7 +49,8 @@ export function boldOf(name) {
   return name.replace(/-(Regular|Medium|Light|Roman)$/, "") + "-Bold";
 }
 
-function escape(s) {
+/** Text as RTF: braces and backslashes escaped, line breaks as RTF breaks, anything past ASCII as Cocoa writes it. */
+export function escape(s) {
   let out = "";
   for (const ch of s) {
     const c = ch.codePointAt(0);
@@ -114,12 +115,37 @@ export function buildRanges(runs, regular) {
   return out;
 }
 
+// A list's marker on each line ("1.", a bullet) is RTF the list draws, not words the person typed.
+const LIST_TEXT = /\{\\listtext[^{}]*\}/g;
+
+/**
+ * Every \\uN as its character. Cocoa writes \\uc0 once and then a run of \\uN (Hebrew with its vowel
+ * points is six in a row); \\ucN says how many fallback characters follow each \\uN, and those are skipped.
+ * Negative N wraps (UTF-16 above 32767), and a surrogate pair arrives as two \\uN, so each is one code unit.
+ * @param {string} body
+ */
+function decodeUnicode(body) {
+  let skip = 1; // RTF's default, until a \\ucN says otherwise
+  // Not after a backslash: "\\\\u" is a backslash the person typed, then a "u".
+  return body.replace(/(?<!\\)\\uc(\d+) ?|(?<!\\)\\u(-?\d+) ?((?:\\'[0-9a-fA-F]{2}|[^\\{}])*)/g, (m, uc, n, after) => {
+    if (uc !== undefined) {
+      skip = Number(uc);
+      return "";
+    }
+    const code = Number(n) < 0 ? Number(n) + 65536 : Number(n);
+    // Drop the fallback characters (a \\'hh counts as one), keep the rest.
+    let rest = after;
+    for (let i = 0; i < skip && rest; i++) rest = rest.startsWith("\\'") ? rest.slice(4) : rest.slice(1);
+    return String.fromCharCode(code) + rest;
+  });
+}
+
 /**
  * The words a box draws, from its RTF: everything after the first colour switch, control words and
  * braces removed. A line break comes back as nothing, as ProPresenter's own plain text does.
  * @param {string} rtf
  */
-export const plainText = (rtf) => rtf.split(/\\cf\d+ /).slice(1).join("").replace(/\\'([0-9a-f]{2})/gi, (_, h) => new TextDecoder("windows-1252").decode(Uint8Array.of(parseInt(h, 16)))).replace(/\\[a-z]+-?\d* ?/gi, "").replace(/[{}\\\n]/g, "");
+export const plainText = (rtf) => decodeUnicode(rtf.split(/\\cf\d+ /).slice(1).join("").replace(LIST_TEXT, "")).replace(/\\'([0-9a-f]{2})/gi, (_, h) => new TextDecoder("windows-1252").decode(Uint8Array.of(parseInt(h, 16)))).replace(/\\[a-z]+-?\d* ?/gi, "").replace(/[{}\\\n]/g, "");
 
 /**
  * The same, keeping line breaks and decoding \uN escapes, for showing a person what a slide says.
@@ -128,19 +154,120 @@ export const plainText = (rtf) => rtf.split(/\\cf\d+ /).slice(1).join("").replac
 const CP1252 = new TextDecoder("windows-1252");
 const ESCAPED = { "{": "\ue001", "}": "\ue002", "\\": "\ue003" };
 const UNESCAPED = { "\ue001": "{", "\ue002": "}", "\ue003": "\\" };
-export function readableText(rtf) {
-  const body = rtf.split(/\\cf\d+ /).slice(1).join("");
-  return body
-    .replace(/\\uc0\\u(-?\d+) ?/g, (_, n) => String.fromCharCode(Number(n) < 0 ? Number(n) + 65536 : Number(n)))
+export function readableText(rtf, { listMarkers = false } = {}) {
+  // A list's markers are left out (they are not words anyone typed) unless asked for: ProPresenter's own
+  // API puts them in a slide's text, so a search index matching it keeps them.
+  const body = rtf.split(/\\cf\d+ /).slice(1).join("").replace(LIST_TEXT, (m) => (listMarkers ? m.slice("{\\listtext".length, -1) : ""));
+  return decodeUnicode(body)
     // \'hh: one byte in the Windows-1252 code page, which is how Cocoa writes curly quotes and dashes.
     .replace(/\\'([0-9a-f]{2})/gi, (_, h) => CP1252.decode(Uint8Array.of(parseInt(h, 16))))
     .replace(/\\\n/g, "\u0001") // a line break the person typed
     .replace(/[\u2028\u2029]/g, "\u0001") // Shift-Return (line separator), and a paragraph separator
-    .replace(/\n/g, "") // RTF's own formatting newlines
+    // RTF's own formatting newlines. Each still ends a control word ("\\kerning0", newline, "2 Corinthians"
+    // must not become "\\kerning02 Corinthians"), so it goes only after the control words are gone.
+    .replace(/\n/g, "\u0002")
     .replace(/\\([\\{}])/g, (_, c) => ESCAPED[c]) // literal braces and backslashes the person typed
     .replace(/\\[a-z]+-?\d* ?/gi, "")
-    .replace(/[{}]/g, "")
+    .replace(/[{}\u0002]/g, "")
     .replace(/[\ue001-\ue003]/g, (c) => UNESCAPED[c])
     .replace(/\u0001/g, "\n")
     .replace(/\n+$/, "");
+}
+
+// A LIST, as ProPresenter 21 writes one (checked against every style on a test sheet it made): a list table
+// and override in the header, a hanging indent on each \\pard, and at the start of every line \\ls1\\ilvl0
+// with the line's marker in a {\\listtext} group. The paragraph style holds the same list as text_list.
+// number_type is ProPresenter's: 0 box, 1 check, 2 circle, 3 diamond, 4 disc, 5 hyphen, 6 square, 7 1, 8 a,
+// 9 A, 10 i, 11 I.
+const BULLETS = [["box", 9643], ["check", 10003], ["circle", 9702], ["diamond", 9670], ["disc", 8226], ["hyphen", 8259], ["square", 9642]];
+const NUMBERS = [["decimal", 0], ["lower-alpha", 4], ["upper-alpha", 3], ["lower-roman", 2], ["upper-roman", 1]];
+const roman = (n) => {
+  let out = "";
+  for (const [v, s] of [[1000, "m"], [900, "cm"], [500, "d"], [400, "cd"], [100, "c"], [90, "xc"], [50, "l"], [40, "xl"], [10, "x"], [9, "ix"], [5, "v"], [4, "iv"], [1, "i"]]) while (n >= v) { out += s; n -= v; }
+  return out;
+};
+const alpha = (n) => String.fromCharCode(97 + ((n - 1) % 26)).repeat(Math.ceil(n / 26));
+const NUMBER = [String, alpha, (n) => alpha(n).toUpperCase(), roman, (n) => roman(n).toUpperCase()];
+const hex2 = (n) => `\\'${n.toString(16).padStart(2, "0")}`;
+
+/** The marker a list draws on its nth line (from 1), as RTF. */
+function marker(list, n) {
+  const t = list.number_type ?? 0;
+  if (t < 7) return `\\uc0\\u${BULLETS[t][1]} `;
+  return escape(`${list.prefix ?? ""}${NUMBER[t - 7](n + (list.starting_number ?? 1) - 1)}${list.postfix ?? ""}`);
+}
+
+function listTable(list) {
+  const t = list.number_type ?? 0;
+  const start = list.starting_number ?? 1;
+  let nfc, name, text, numbers;
+  if (t < 7) {
+    [name] = BULLETS[t];
+    nfc = 23;
+    text = `\\'01\\uc0\\u${BULLETS[t][1]} ;`;
+    numbers = "";
+  } else {
+    [name, nfc] = NUMBERS[t - 7];
+    const pre = list.prefix ?? "", post = list.postfix ?? "";
+    text = `${hex2(pre.length + post.length + 1)}${escape(pre)}\\'00${escape(post)};`;
+    numbers = hex2(pre.length + 1);
+  }
+  const brace = (s) => s.replace(/[{}]/g, (c) => `\\${c}`);
+  return `{\\*\\listtable{\\list\\listtemplateid1\\listhybrid{\\listlevel\\levelnfc${nfc}\\levelnfcn${nfc}\\leveljc0\\leveljcn0\\levelfollow0\\levelstartat${start}\\levelspace360\\levelindent0` +
+    `{\\*\\levelmarker ${brace(`${t < 7 ? "" : list.prefix ?? ""}{${name}}${t < 7 ? "" : list.postfix ?? ""}`)}}{\\leveltext\\leveltemplateid1${text}}{\\levelnumbers${numbers};}\\fi-360\\li720\\lin720 }{\\listname ;}\\listid1}}\n` +
+    "{\\*\\listoverridetable{\\listoverride\\listid1\\listoverridecount0\\ls1}}\n";
+}
+
+/** A group starting at `at` ("{"), up to and including its closing brace. */
+function groupEnd(s, at) {
+  let depth = 0;
+  for (let i = at; i < s.length; i++) {
+    if (s[i] === "\\") { i++; continue; }
+    if (s[i] === "{") depth++;
+    else if (s[i] === "}" && --depth === 0) return i + 1;
+  }
+  return s.length;
+}
+
+/**
+ * A box's RTF with its list markup taken out, then, when `list` is given, ProPresenter's for that list put
+ * in. `list` is the paragraph style's text_list plus `indent`, the hanging indent in points. `like` is RTF
+ * whose markers' style to keep (the box's old RTF, when its words were rebuilt), else `rtf`'s own.
+ * @param {string} rtf
+ * @param {{ number_type?: number, prefix?: string, postfix?: string, starting_number?: number, indent: number } | null} list
+ * @param {string} [like]
+ */
+export function listRtf(rtf, list, like = rtf) {
+  const had = rtf.includes("{\\*\\listtable");
+  if (!had && !list) return rtf;
+  // A marker styled apart from the words (ProPresenter writes a bold one as "\\n\\f1\\b 1.\\n\\f0\\b0 ") keeps
+  // its style when the list is rebuilt.
+  const styled = /\{\\listtext\t(\n\\[^\s{}]+ )[^{}]*?(\n\\[^\s{}]+ )\t\}/.exec(like);
+  const [pre, post] = styled ? [styled[1], styled[2]] : ["", ""];
+  for (const head of ["{\\*\\listtable", "{\\*\\listoverridetable"]) {
+    const at = rtf.indexOf(head);
+    if (at >= 0) { const end = groupEnd(rtf, at); rtf = rtf.slice(0, at) + rtf.slice(end).replace(/^\n/, ""); }
+  }
+  rtf = rtf.replace(LIST_TEXT, "").replace(/\\ls\d+\\ilvl\d+\n?/g, "");
+  const twips = list ? Math.round(list.indent * 20) : 0;
+  rtf = rtf.replace(/\\pard(?![a-z])((?:\\[a-z]+-?\d*)*)/g, (_, rest) => {
+    const kept = rest.replace(/\\tx\d+|\\li\d+|\\fi-?\d+/g, "");
+    if (!list) return `\\pard${kept}`;
+    const tab = /^\\pardeftab\d+/.exec(kept)?.[0] ?? "";
+    return `\\pard\\tx20\\tx${twips}${tab}\\li${twips}\\fi-${twips}${kept.slice(tab.length)}`;
+  });
+  if (!list) return rtf;
+  // The tables go after the colour tables, before \\deftab, where ProPresenter puts them.
+  const tables = /\n\\deftab|\n\\pard/.exec(rtf);
+  rtf = tables ? rtf.slice(0, tables.index + 1) + listTable(list) + rtf.slice(tables.index + 1) : rtf;
+  // Each line: after the first colour switch, and after every line break the person typed (a backslash
+  // that is not itself escaped, then a newline), past any \\pard that starts the new paragraph.
+  let n = 1;
+  const item = () => `\\ls1\\ilvl0{\\listtext\t${pre}${marker(list, n++)}${post}\t}`;
+  const first = /\\cf\d+ /.exec(rtf);
+  if (!first) return rtf;
+  const head = rtf.slice(0, first.index + first[0].length);
+  const one = item().replace("\\ls1\\ilvl0", "");
+  const body = rtf.slice(head.length).replace(/(?<!\\)((?:\\\\)*\\\n)(\\pard[^\n]*\n)?/g, (_, brk, pard = "") => `${brk}${pard}${item()}`);
+  return head.replace(/(\\pard[^\n]*\n)(?![\s\S]*\\pard)/, "$1\\ls1\\ilvl0\n") + one + body;
 }

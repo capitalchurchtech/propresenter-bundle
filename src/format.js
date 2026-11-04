@@ -1,4 +1,4 @@
-import { readRangeFont, writeRangeFont, boldOf } from "./rtf.js";
+import { readRangeFont, writeRangeFont, boldOf, escape, readableText, listRtf } from "./rtf.js";
 import { freshCopy } from "./elements.js";
 
 // What ProPresenter's slide editor changes on a box, written the way ProPresenter writes it. Where it keeps a
@@ -154,4 +154,140 @@ export function arrangeBox(slide, el, op) {
   list.splice(at, 1);
   list.splice(to, 0, el);
   return null;
+}
+
+/**
+ * Line spacing, as a multiple of the font's own (1 is single). ProPresenter writes it twice: \sl (in
+ * twentieths of a point, 240 to a line) with \slmult1 on every RTF paragraph, and the paragraph style's
+ * line_height_multiple; at 1 it writes no \sl at all. Checked against ProPresenter 21's own files.
+ */
+export function setLineSpacing(el, multiple) {
+  if (!(typeof multiple === "number" && multiple >= 0.1 && multiple <= 5)) throw new Error("Line spacing is a multiple from 0.1 to 5 (1 is single).");
+  const t = textOfBox(el);
+  let rtf = rtfOf(t).replace(/\\sl-?\d+(\\slmult\d)?/g, "");
+  if (Math.abs(multiple - 1) > 1e-9) rtf = rtf.replace(/\\pard(?![a-z])(\\pardeftab\d+)?/g, (m) => `${m}\\sl${Math.round(240 * multiple)}\\slmult1`);
+  setRtf(t, rtf);
+  t.attributes.paragraph_style = { ...(t.attributes.paragraph_style ?? {}), line_height_multiple: multiple };
+}
+
+// A slide's notes, as ProPresenter writes them: Helvetica Neue 48 on white.
+const NOTES_HEAD = "{\\rtf1\\ansi\\ansicpg1252\\cocoartf2868\n\\cocoatextscaling0\\cocoaplatform0{\\fonttbl\\f0\\fnil\\fcharset0 HelveticaNeue;}\n" +
+  "{\\colortbl;\\red255\\green255\\blue255;\\red255\\green255\\blue255;}\n{\\*\\expandedcolortbl;;\\csgray\\c100000;}\n" +
+  "\\deftab1300\n\\pard\\pardeftab1300\\pardirnatural\\partightenfactor0\n\n\\f0\\fs48 \\cf2 ";
+
+/** A slide's notes as plain text ("" for none). `action` is the slide's own action (the one with `slide`). */
+export function notesOf(action) {
+  const n = action?.slide?.presentation?.notes;
+  return n?.rtf_data ? readableText(Buffer.from(n.rtf_data).toString("latin1")).trim() : "";
+}
+
+/** New notes on a slide, or none for "". Line breaks are kept. */
+export function setNotes(action, text) {
+  const p = action?.slide?.presentation;
+  if (!p) throw new Error("Only a presentation slide has notes.");
+  if (typeof text !== "string") throw new Error("Notes are text.");
+  if (!text.trim()) { delete p.notes; return; }
+  p.notes = { rtf_data: Buffer.from(`${NOTES_HEAD}${escape(text)}}`, "latin1"), attributes: {} };
+}
+
+/** A run's outline, as ProPresenter writes it after the run's colour. */
+export const OUTLINE = /\\outl0\\strokewidth-?\d+ ?\\strokec\d+ ?/g;
+
+/** The colour table's entries, so one can be added and pointed at by number (\\cf2, \\strokec3). */
+function colorTable(rtf) {
+  const m = /\{\\colortbl;([^}]*)\}/.exec(rtf);
+  return m ? m[1].split(";").filter((e) => e.trim()) : [];
+}
+
+/**
+ * An outline round the letters (not the box): its width, as ProPresenter's editor shows it (a percent of the font
+ * size, per docs/RENDERING.md), and colour, or "none". ProPresenter writes
+ * it twice: the attributes' stroke_width (negative: outline and fill both) and stroke_color, and on every run
+ * \\outl0\\strokewidth{-20 x width}\\strokec{n}, n its entry in the RTF colour table (added to both forms).
+ */
+export function setTextOutline(el, outline) {
+  const t = textOfBox(el);
+  let rtf = rtfOf(t).replace(OUTLINE, "");
+  if (outline === "none" || outline === null) {
+    setRtf(t, rtf);
+    t.attributes.stroke_width = 0;
+    delete t.attributes.stroke_color;
+    return;
+  }
+  const c = parseColor(outline?.color ?? "#000000");
+  const width = outline?.width ?? 2;
+  if (!c) throw new Error("An outline needs a colour.");
+  if (!(width > 0 && width <= 50)) throw new Error("An outline's width is above 0 and at most 50 (a percent of the type size, as ProPresenter shows it).");
+  const [r, g, b] = [byte(c.red), byte(c.green), byte(c.blue)];
+  const entries = colorTable(rtf);
+  const n = entries.length + 1;
+  const per = (v) => Math.round((v / 255) * 100000);
+  rtf = rtf.replace(/(\{\\colortbl;[^}]*)\}/, `$1\\red${r}\\green${g}\\blue${b};}`);
+  rtf = rtf.replace(/(\{\\\*\\expandedcolortbl;[^}]*)\}/, `$1\\csgenericrgb\\c${per(r)}\\c${per(g)}\\c${per(b)};}`);
+  // ProPresenter's own spacing: "\\cf2 \\outl0\\strokewidth-40 \\strokec3 ".
+  rtf = rtf.replace(/(\\cf\d+) ?/g, `$1 \\outl0\\strokewidth${-Math.round(width * 20)} \\strokec${n} `);
+  setRtf(t, rtf);
+  t.attributes.stroke_width = -width;
+  t.attributes.stroke_color = c;
+}
+
+/** A shadow behind the letters: true for ProPresenter's default (black, 5 points, down and right), false for none. */
+export function setTextShadow(el, on) {
+  const t = textOfBox(el);
+  t.shadow = { style: 0, angle: 315, offset: 5, radius: 5, color: { red: 0, green: 0, blue: 0, alpha: 1 }, opacity: 0.75, ...(t.shadow ?? {}), enable: Boolean(on) };
+}
+
+/** A soft edge on the box, as a fraction from 0 (hard) to 1, or "none". */
+export function setFeather(el, amount) {
+  const x = el.element;
+  if (amount === "none" || amount === null || amount === 0) { x.feather = { ...(x.feather ?? {}), enable: false }; return; }
+  if (!(typeof amount === "number" && amount > 0 && amount <= 1)) throw new Error("Feather is 0 (none) to 1.");
+  x.feather = { ...(x.feather ?? {}), radius: amount, enable: true };
+}
+
+/** Space between the box's edge and its words, in slide pixels, each side or all four. */
+export function setMargins(el, m) {
+  const t = textOfBox(el);
+  const all = typeof m === "number" ? { left: m, right: m, top: m, bottom: m } : m ?? {};
+  for (const [k, v] of Object.entries(all)) if (!["left", "right", "top", "bottom"].includes(k) || !(typeof v === "number" && v >= 0 && v <= 2000)) throw new Error("Margins are left, right, top and bottom, each 0 to 2000.");
+  t.margins = { ...(t.margins ?? {}), ...all };
+}
+
+// ProPresenter's list styles by number_type, as model.js reads them back: the bullets by name, then 1, a, A, i, I.
+const LIST_TYPES = ["box", "check", "circle", "diamond", "disc", "hyphen", "square", "1", "a", "A", "i", "I"];
+
+/**
+ * A list on a text box, or "none". A style is a bullet (box, check, circle, diamond, disc, hyphen, square) or
+ * a number (1, a, A, i, I) with "(" before and "." or ")" after, as ProPresenter offers them: "1.", "(a)",
+ * "A)". `start` is the first number; `indent` the hanging indent in points (ProPresenter's 80 unless the box
+ * already has one). Written in the RTF and the paragraph style both, as ProPresenter writes it.
+ * @param {any} el
+ * @param {"none" | null | string | { style: string, start?: number, indent?: number }} spec
+ */
+export function setList(el, spec) {
+  const t = textOfBox(el);
+  const ps = (t.attributes.paragraph_style ??= {});
+  if (spec === "none" || spec === null) {
+    setRtf(t, listRtf(rtfOf(t), null));
+    // The indent and tab stops go too when they are the ones a list writes; a box's own are kept.
+    const fromList = ps.tab_stops?.length === 2 && ps.tab_stops[0].location === 1 && ps.tab_stops[1].location === ps.head_indent;
+    if (fromList) for (const k of ["head_indent", "tab_stops"]) delete ps[k];
+    ps.text_list = {};
+    delete ps.text_lists;
+    return;
+  }
+  const { style, start = 1, indent = ps.head_indent || 80 } = typeof spec === "string" ? { style: spec } : spec ?? {};
+  const m = /^(\(?)(1|a|A|i|I)([.)]?)$/.exec(style ?? "");
+  const bullet = LIST_TYPES.indexOf(style);
+  if (!m && !(bullet >= 0 && bullet < 7)) throw new Error(`A list is a bullet (${LIST_TYPES.slice(0, 7).join(", ")}) or a number like 1. (a) A) i., or "none".`);
+  if (!(Number.isInteger(start) && start >= 1 && start <= 9999)) throw new Error("A list starts at a whole number from 1.");
+  if (!(typeof indent === "number" && indent > 0 && indent <= 1000)) throw new Error("A list's indent is above 0 and at most 1000 points.");
+  const list = m
+    ? { number_type: LIST_TYPES.indexOf(m[2]), ...(m[1] ? { prefix: m[1] } : {}), ...(m[3] ? { postfix: m[3] } : {}), starting_number: start }
+    : { number_type: bullet, starting_number: start };
+  setRtf(t, listRtf(rtfOf(t), { ...list, indent }));
+  ps.head_indent = indent;
+  ps.tab_stops = [{ location: 1 }, { location: indent, alignment: 4 }];
+  ps.text_list = { is_enabled: true, ...list };
+  ps.text_lists = [list];
 }

@@ -23,7 +23,8 @@ export function boldOf(name: string): string;
 export function buildRtf(templateRtf: string, runs: Run[], regular: string, bold: string): string;
 export function buildRanges(runs: Run[], regular: RangeFont): { range: { start?: number; end: number }; _unknown_12: Uint8Array[] }[];
 export function plainText(rtf: string): string;
-export function readableText(rtf: string): string;
+export function listRtf(rtf: string, list: { number_type?: number; prefix?: string; postfix?: string; starting_number?: number; indent: number } | null, like?: string): string;
+export function readableText(rtf: string, opts?: { listMarkers?: boolean }): string;
 
 export interface UnknownField { type: string; field: number; wireType: number; path: string }
 export function findUnknownFields(top: protobuf.Type, buf: Uint8Array): UnknownField[];
@@ -70,6 +71,9 @@ export interface ElementModel {
   text: string; fontName: string | null; fontFamily: string | null; fontSize: number | null; caps: boolean; media: string | null;
   /** What the box takes from elsewhere, in plain words: "slide label", "timer", "clock"... */
   links: string[];
+  list?: { style: string; start: number }; textOutline?: { width: number; color: string | null };
+  textShadow?: { color: string | null; radius: number; offset: number }; feather?: number;
+  margins?: { left: number; right: number; top: number; bottom: number }; shape?: string;
 }
 export interface SlideModel {
   uuid: string | null; label: string; enabled: boolean; text: string[]; elements: ElementModel[];
@@ -151,3 +155,24 @@ export function mediaEntryName(file: string, workspace: string): string;
 export function readPlaylistFile(buf: Buffer, opts?: { maxEntryBytes?: number }): {
   playlists: unknown[]; presentations: string[]; media: string[]; unknown: number; entries: BundleEntry[];
 };
+
+export function setLineSpacing(el: Msg, multiple: number): void;
+export function notesOf(action: Msg): string;
+export function setNotes(action: Msg, text: string): void;
+
+export function themeWorkspace(doc: Msg): string | null;
+export function themeSlideAsCue(file: OpenedTheme, doc: Msg, index: number, opts: { workspace: string; label?: string }): { cue: Msg; media: BundleEntry[] };
+
+export function setTextOutline(el: Msg, outline: { width?: number; color?: string } | "none" | null): void;
+export function setTextShadow(el: Msg, on: boolean): void;
+export function setFeather(el: Msg, amount: number | "none" | null): void;
+export function setMargins(el: Msg, m: number | { left?: number; right?: number; top?: number; bottom?: number }): void;
+export function setList(el: Msg, spec: "none" | null | string | { style: string; start?: number; indent?: number }): void;
+export interface DrawContext { picture?: (file: string, path: string | null) => string | null; label?: string; timerSeconds?: Record<string, number>; props?: Map<string, Msg>; macros?: Map<string, Msg> }
+export interface DrawnSlide { html: string; width: number; height: number; pictures: string[]; fonts: string[] }
+export function drawSlide(baseSlide: Msg, actions: Msg[], ctx?: DrawContext): DrawnSlide;
+export function drawPresentation(doc: Msg, ctx?: DrawContext): Array<DrawnSlide & { id: string | null; group: string | null; label: string; enabled: boolean }>;
+export function fontFaces(names: Iterable<string>): string;
+export function parseRtf(rtf: string): { paras: Array<{ align: string | null; runs: Array<{ text: string } & Record<string, unknown>> }>; sl: number | null; lead: number };
+export function mediaFile(url: Msg): { name: string | null; path: string | null };
+export const DRAW_CSS: string;
