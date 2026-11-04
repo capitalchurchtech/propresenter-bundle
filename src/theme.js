@@ -127,7 +127,14 @@ export function themeWorkspace(doc) {
   if (direct) return direct;
   const find = (v) => {
     if (!v || typeof v !== "object" || v instanceof Uint8Array) return null;
-    const abs = typeof v.absolute_string === "string" ? decodeURI(v.absolute_string.replace(/^file:\/\//, "")) : "";
+    let abs = "";
+    if (typeof v.absolute_string === "string") {
+      try {
+        abs = decodeURI(v.absolute_string.replace(/^file:\/\//, ""));
+      } catch {
+        abs = ""; // a malformed address says nothing about the workspace
+      }
+    }
     if (abs.includes("/Themes/")) return abs.slice(0, abs.lastIndexOf("/Themes/"));
     for (const x of Array.isArray(v) ? v : Object.values(v)) { const f = find(x); if (f) return f; }
     return null;

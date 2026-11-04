@@ -93,3 +93,20 @@ test("draw.js is pure: it imports nothing, so it can run anywhere", () => {
   assert.doesNotMatch(src, /^\s*import /m);
   assert.doesNotMatch(src, /require\(|process\.|child_process|node:fs/);
 });
+
+test("a crafted font name can't close its CSS string and add a rule", () => {
+  const doc = open("show-template.pro");
+  const x = elementsOf(doc).find((e) => e.element.text?.rtf_data);
+  const evil = "Helvetica');background:url(https://example.invalid/x);font-family:('";
+  x.element.text.rtf_data = Buffer.from(`{\\rtf1\\ansi{\\fonttbl\\f0\\fnil\\fcharset0 ${evil};}\n{\\colortbl;\\red255\\green255\\blue255;}\n\\pard\n\n\\f0\\fs80 \\cf1 Words}`, "latin1");
+  x.element.text.attributes = { ...(x.element.text.attributes ?? {}), font: { name: evil, family: evil, size: 40 } };
+  const { html } = drawSlide(baseOf(x.cue), x.cue.actions);
+  assert.ok(html.includes("Words"));
+  assert.doesNotMatch(html, /url\(https/);
+  assert.doesNotMatch(html, /'ps-[^']*\)/, "no parenthesis or quote survives inside a font name");
+});
+
+test("a theme whose picture address is malformed says nothing about its workspace, rather than throwing", async () => {
+  const { themeWorkspace } = await import("../src/index.js");
+  assert.equal(themeWorkspace({ slides: [{ url: { absolute_string: "file:///Users/x/Themes/%E0%A4%A/a.png" } }] }), null);
+});

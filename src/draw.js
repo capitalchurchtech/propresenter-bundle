@@ -164,6 +164,9 @@ function rtfText(t) {
 // ---------------------------------------------------------------- drawing
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+// A font name inside a quoted CSS string in a style attribute: only the characters PostScript and family
+// names use, so a crafted file can't close the string and add a rule (a url() to a server, say).
+const cssName = (s) => String(s).replace(/[^\w .-]/g, "");
 const rgba = (c, a = 1) => (c ? `rgba(${Math.round((c.red ?? 0) * 255)},${Math.round((c.green ?? 0) * 255)},${Math.round((c.blue ?? 0) * 255)},${(c.alpha ?? 1) * a})` : null);
 const fit = (sb) => (sb === 1 ? "cover" : sb === 2 ? "fill" : "contain");
 const ALIGN = { 0: "left", 1: "right", 2: "center", 3: "justify", 4: "left" };
@@ -319,7 +322,7 @@ function textHtml(x, mask, textFill, used) {
   if (!paras.length) return "";
   const a = t.attributes ?? {};
   const ps = a.paragraph_style ?? {};
-  const family = esc(a.font?.family ?? "Helvetica Neue");
+  const family = cssName(a.font?.family ?? "Helvetica Neue");
   // Capitalisation is the box's (all of it) or a character range's (custom_attributes, UTF-16
   // offsets into the plain text, end exclusive, a paragraph break counting as one character).
   const caps = a.capitalization === 1;
@@ -340,7 +343,7 @@ function textHtml(x, mask, textFill, used) {
   const size0 = paras[0]?.runs[0]?.size || a.font?.size || 40;
   const font0 = paras[0]?.runs[0]?.font ?? a.font?.name ?? "HelveticaNeue";
   // A line's tag is the font's own height plus the mask's height offset, and moves with its words.
-  const hl = (h) => (textFill ? `<span class="hl" data-fs="${size0}" style="font-family:'ps-${esc(font0)}','${family}',sans-serif;font-size:${size0}px;line-height:calc(${lh}em + ${ls}px);background:${textFill};-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:${Math.max(0, mask.h / 2 - DY * mask.dy)}px ${mask.w / 2}px ${Math.max(0, mask.h / 2 + DY * mask.dy)}px">${h}</span>` : h);
+  const hl = (h) => (textFill ? `<span class="hl" data-fs="${size0}" style="font-family:'ps-${cssName(font0)}','${family}',sans-serif;font-size:${size0}px;line-height:calc(${lh}em + ${ls}px);background:${textFill};-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:${Math.max(0, mask.h / 2 - DY * mask.dy)}px ${mask.w / 2}px ${Math.max(0, mask.h / 2 + DY * mask.dy)}px">${h}</span>` : h);
   // The paragraph's own font and size set its strut: a browser line is never shorter than the
   // paragraph's font, so a default 14px strut, baseline-aligned against a 225px run set at 0.1,
   // would make the line taller than the run's own. Cocoa measures lines from their runs.
@@ -349,7 +352,7 @@ function textHtml(x, mask, textFill, used) {
   const html = paras.map((p) => {
     const plh = lhOf(p);
     used.fonts.add(pFont(p));
-    return `<p data-fs="${pSize(p)}"${p.tabs?.length ? ` data-stops="${p.tabs.join(",")}"` : ""} data-deftab="${ps.default_tab_interval || 84}" style="${p.li || p.fi ? `padding-left:${p.li || 0}px;text-indent:${p.fi || 0}px;` : ""}${p.ri ? `padding-right:${p.ri}px;` : ""}text-align:${p.align ?? ALIGN[ps.alignment ?? 0]};line-height:${lineCss(p, plh)};font-family:'ps-${esc(pFont(p))}','${family}',sans-serif;font-size:${pSize(p)}px">${hl(p.runs.map((r) => {
+    return `<p data-fs="${pSize(p)}"${p.tabs?.length ? ` data-stops="${p.tabs.join(",")}"` : ""} data-deftab="${ps.default_tab_interval || 84}" style="${p.li || p.fi ? `padding-left:${p.li || 0}px;text-indent:${p.fi || 0}px;` : ""}${p.ri ? `padding-right:${p.ri}px;` : ""}text-align:${p.align ?? ALIGN[ps.alignment ?? 0]};line-height:${lineCss(p, plh)};font-family:'ps-${cssName(pFont(p))}','${family}',sans-serif;font-size:${pSize(p)}px">${hl(p.runs.map((r) => {
       const font = r.font ?? a.font?.name ?? "HelveticaNeue";
       used.fonts.add(font);
       const sys = /^\.(AppleSystem|SF)/.test(font) ? "system-ui," : "";
@@ -358,7 +361,7 @@ function textHtml(x, mask, textFill, used) {
       const styled = styledFace(font, r.bold, r.italic);
       if (styled) used.fonts.add(styled);
       const size = r.size || a.font?.size || 40;
-      return `<span class="r" data-fs="${size}" data-lh="${plh}" data-ls="${ls}" style="line-height:${lineCss(p, plh)};font-family:${sys}${styled ? `'ps-${esc(styled)}',` : ""}'ps-${esc(font)}','${family}',sans-serif;font-size:${size}px;color:${r.color && r.color !== "rgb(255,255,255)" ? r.color : baseColor};${r.bold && !/Bold|Black|Heavy/.test(font) ? "font-weight:700;" : ""}${r.italic ? "font-style:italic;" : ""}${r.sp ? `letter-spacing:${r.sp}px;` : ""}${r.ul || r.strike ? `text-decoration:${[r.ul && "underline", r.strike && "line-through"].filter(Boolean).join(" ")};` : ""}${r.up ? `vertical-align:${r.up}px;` : ""}${r.stroke ? `-webkit-text-stroke:${(Math.abs(r.stroke.pct) / 100) * size}px ${r.stroke.color};${r.stroke.pct > 0 ? "-webkit-text-fill-color:transparent;" : ""}` : ""}${r.bg ? `background:${r.bg};` : ""}${r.caps ? "text-transform:uppercase;" : ""}">${esc(r.text).replace(/\n/g, "<br>").replace(/\t/g, '<span class="tab"></span>')}</span>`;
+      return `<span class="r" data-fs="${size}" data-lh="${plh}" data-ls="${ls}" style="line-height:${lineCss(p, plh)};font-family:${sys}${styled ? `'ps-${cssName(styled)}',` : ""}'ps-${cssName(font)}','${family}',sans-serif;font-size:${size}px;color:${r.color && r.color !== "rgb(255,255,255)" ? r.color : baseColor};${r.bold && !/Bold|Black|Heavy/.test(font) ? "font-weight:700;" : ""}${r.italic ? "font-style:italic;" : ""}${r.sp ? `letter-spacing:${r.sp}px;` : ""}${r.ul || r.strike ? `text-decoration:${[r.ul && "underline", r.strike && "line-through"].filter(Boolean).join(" ")};` : ""}${r.up ? `vertical-align:${r.up}px;` : ""}${r.stroke ? `-webkit-text-stroke:${(Math.abs(r.stroke.pct) / 100) * size}px ${r.stroke.color};${r.stroke.pct > 0 ? "-webkit-text-fill-color:transparent;" : ""}` : ""}${r.bg ? `background:${r.bg};` : ""}${r.caps ? "text-transform:uppercase;" : ""}">${esc(r.text).replace(/\n/g, "<br>").replace(/\t/g, '<span class="tab"></span>')}</span>`;
     }).join(""))}</p>`;
   }).join("");
   const firstAlign = paras[0]?.align ?? ALIGN[ps.alignment ?? 0];
