@@ -1,6 +1,6 @@
 {
   "name": "propresenter-bundle",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "Read, check and edit ProPresenter 7 presentations and bundles (.pro, .probundle). Unofficial.",
   "license": "MIT",
