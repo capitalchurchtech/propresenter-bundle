@@ -61,6 +61,9 @@ test("readableText: a run of \\uN after one \\uc0, \\ucN fallbacks skipped, a ne
   // Hebrew with its points: Cocoa writes \uc0 once, then six \uN in a row.
   assert.equal(readableText(r("\\uc0\\u1513 \\u1473 \\u1464 \\u1489 \\u1463 \\u1514 ")), "\u05e9\u05c1\u05b8\u05d1\u05b7\u05ea");
   assert.equal(plainText(r("\\uc0\\u1513 \\u1514 ")), "\u05e9\u05ea");
+  // A backslash the person typed is a character, not the start of a control word (and "\\u2014" typed is not a dash).
+  assert.equal(plainText(r("C:\\\\users\\\\u2014 {\\\\} \\{a\\} done")), "C:\\users\\u2014 \\ {a} done");
+  assert.equal(readableText(r("C:\\\\users\\\\u2014 done")), "C:\\users\\u2014 done");
   assert.equal(readableText(r("\\uc1\\u1513?\\u1514\\'e9z")), "\u05e9\u05eaz", "one fallback character after each, a \\'hh counting as one");
   assert.equal(readableText(r("\\uc0\\u-10179 \\u-8704 ")), "\u{1F600}", "a surrogate pair");
   assert.equal(readableText(r("a\\\\u1513 b")), "a\\u1513 b", "a backslash the person typed is not an escape");

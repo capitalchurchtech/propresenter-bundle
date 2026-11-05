@@ -343,7 +343,11 @@ function textHtml(x, mask, textFill, used) {
   const size0 = paras[0]?.runs[0]?.size || a.font?.size || 40;
   const font0 = paras[0]?.runs[0]?.font ?? a.font?.name ?? "HelveticaNeue";
   // A line's tag is the font's own height plus the mask's height offset, and moves with its words.
-  const hl = (h) => (textFill ? `<span class="hl" data-fs="${size0}" style="font-family:'ps-${cssName(font0)}','${family}',sans-serif;font-size:${size0}px;line-height:calc(${lh}em + ${ls}px);background:${textFill};-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:${Math.max(0, mask.h / 2 - DY * mask.dy)}px ${mask.w / 2}px ${Math.max(0, mask.h / 2 + DY * mask.dy)}px">${h}</span>` : h);
+  // Its width offset widens the tag but not the line: ProPresenter wraps the words at the box's own
+  // width (checked on its pictures), so each line's padding is cancelled by an equal negative margin
+  // and takes no room in the line.
+  const side = mask?.w > 0 ? `padding-left:${mask.w / 2}px;padding-right:${mask.w / 2}px;margin:0 ${-mask.w / 2}px;` : "";
+  const hl = (h) => (textFill ? `<span class="hl" data-fs="${size0}" style="font-family:'ps-${cssName(font0)}','${family}',sans-serif;font-size:${size0}px;line-height:calc(${lh}em + ${ls}px);background:${textFill};-webkit-box-decoration-break:clone;box-decoration-break:clone;padding-top:${Math.max(0, mask.h / 2 - DY * mask.dy)}px;padding-bottom:${Math.max(0, mask.h / 2 + DY * mask.dy)}px;${side}">${h}</span>` : h);
   // The paragraph's own font and size set its strut: a browser line is never shorter than the
   // paragraph's font, so a default 14px strut, baseline-aligned against a 225px run set at 0.1,
   // would make the line taller than the run's own. Cocoa measures lines from their runs.
@@ -380,7 +384,7 @@ function textHtml(x, mask, textFill, used) {
   // once laid out); 1, adjust the container's height, draws as 0.
   const fitMode = [2, 3, 4].includes(t.scale_behavior) ? t.scale_behavior : 0;
   const shadow = t.shadow?.enable ? `text-shadow:${shadowCss(t.shadow)};` : "";
-  return `<div class="txt"${fitMode ? ` data-fit="${fitMode}"` : ""} style="justify-content:${va};tab-size:${ps.default_tab_interval || 84}px;${shadow}${caps ? "text-transform:uppercase;" : ""}"><div class="words" style="padding:${pad};${firstPad && !blockMask ? `margin-top:${firstPad}px;` : ""}${mask ? `margin-left:${-mask.w / 2}px;margin-right:${-mask.w / 2}px;max-width:calc(100% + ${mask.w}px);` : ""}align-self:${blockMask && mask.style === 0 ? "stretch" : self}">${body}</div></div>`;
+  return `<div class="txt"${fitMode ? ` data-fit="${fitMode}"` : ""} style="justify-content:${va};tab-size:${ps.default_tab_interval || 84}px;${shadow}${caps ? "text-transform:uppercase;" : ""}"><div class="words" style="padding:${pad};${firstPad && !blockMask ? `margin-top:${firstPad}px;` : ""}${blockMask ? `margin-left:${-mask.w / 2}px;margin-right:${-mask.w / 2}px;max-width:calc(100% + ${mask.w}px);` : ""}align-self:${blockMask && mask.style === 0 ? "stretch" : self}">${body}</div></div>`;
 }
 
 // A background is placed like a picture in a box, the box being the whole slide. A missing

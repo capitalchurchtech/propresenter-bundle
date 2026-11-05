@@ -140,20 +140,29 @@ function decodeUnicode(body) {
   });
 }
 
+const CP1252 = new TextDecoder("windows-1252");
+const ESCAPED = { "{": "\ue001", "}": "\ue002", "\\": "\ue003" };
+const UNESCAPED = { "\ue001": "{", "\ue002": "}", "\ue003": "\\" };
+
 /**
  * The words a box draws, from its RTF: everything after the first colour switch, control words and
  * braces removed. A line break comes back as nothing, as ProPresenter's own plain text does.
  * @param {string} rtf
  */
-export const plainText = (rtf) => decodeUnicode(rtf.split(/\\cf\d+ /).slice(1).join("").replace(LIST_TEXT, "")).replace(/\\'([0-9a-f]{2})/gi, (_, h) => new TextDecoder("windows-1252").decode(Uint8Array.of(parseInt(h, 16)))).replace(/\\[a-z]+-?\d* ?/gi, "").replace(/[{}\\\n]/g, "");
+export const plainText = (rtf) =>
+  decodeUnicode(rtf.split(/\\cf\d+ /).slice(1).join("").replace(LIST_TEXT, ""))
+    .replace(/\\'([0-9a-f]{2})/gi, (_, h) => CP1252.decode(Uint8Array.of(parseInt(h, 16))))
+    // Literal braces and backslashes the person typed, kept apart from control words: "C:\\users" is
+    // a path, not a control word "\\users" to strip.
+    .replace(/\\([\\{}])/g, (_, c) => ESCAPED[c])
+    .replace(/\\[a-z]+-?\d* ?/gi, "")
+    .replace(/[{}\\\n]/g, "")
+    .replace(/[\ue001-\ue003]/g, (c) => UNESCAPED[c]);
 
 /**
  * The same, keeping line breaks and decoding \uN escapes, for showing a person what a slide says.
  * @param {string} rtf
  */
-const CP1252 = new TextDecoder("windows-1252");
-const ESCAPED = { "{": "\ue001", "}": "\ue002", "\\": "\ue003" };
-const UNESCAPED = { "\ue001": "{", "\ue002": "}", "\ue003": "\\" };
 export function readableText(rtf, { listMarkers = false } = {}) {
   // A list's markers are left out (they are not words anyone typed) unless asked for: ProPresenter's own
   // API puts them in a slide's text, so a search index matching it keeps them.
