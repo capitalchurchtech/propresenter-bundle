@@ -78,6 +78,21 @@ test("a list draws its markers with the hanging indent and stops; an outline and
   assert.doesNotMatch(html, /outline:4px solid/);
 });
 
+test("a line mask's width offset widens each line's tag but leaves the words the box's own width to wrap in", () => {
+  const doc = open("show-template.pro");
+  const x = elementsOf(doc).find((e) => e.element.text?.rtf_data);
+  setText(x.wrapper, markdownRuns("One two three"));
+  setBoxStyle(x.wrapper, { fill: "#88aa55" });
+  x.element.text_line_mask = { enabled: true, mask_style: 1, width_offset: 99 };
+  const each = drawSlide(baseOf(x.cue), x.cue.actions).html;
+  assert.match(each, /class="hl"[^>]*padding-left:49\.5px;padding-right:49\.5px;margin:0 -49\.5px/, "each line's tag is padded, and the padding takes no room in the line");
+  assert.doesNotMatch(each, /class="words"[^>]*max-width:calc/, "the words are not widened to make room for it");
+  x.element.text_line_mask.mask_style = 0;
+  const block = drawSlide(baseOf(x.cue), x.cue.actions).html;
+  assert.match(block, /class="words"[^>]*margin-left:-49\.5px;margin-right:-49\.5px;max-width:calc\(100% \+ 99px\)/, "a block tag still grows out from the words");
+  assert.doesNotMatch(block, /class="hl"/);
+});
+
 test("a box's name is escaped; font faces are named only when the name is safe", () => {
   const doc = open("show-template.pro");
   const x = elementsOf(doc).find((e) => e.element.text?.rtf_data);

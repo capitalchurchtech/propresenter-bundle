@@ -90,7 +90,10 @@ permission" line, then the licence number); `${Artist}` is the song's `ccli.arti
   ignores the margins. Mixing the two makes every tag too large. The offsets grow the tag *out*
   from the words; they do not push the words in, so a tag can reach past the margins. That holds
   for every style, full width included: the words wrap at the box's width less its margins, never
-  less the offsets (a 61 px `width_offset` taken off the words breaks "MATTHEW" mid-word).
+  less the offsets (a 61 px `width_offset` taken off the words breaks "MATTHEW" mid-word). For
+  style 1 the drawing pads each line's tag and cancels the padding with an equal negative margin;
+  padding alone is counted against the line, and moved a word on 27 of about 4,000 wrapping boxes
+  in one church's libraries (two of them checked against ProPresenter's own pictures).
 - `vertical_offset` moves the tag, not the words, by that many points; positive is down.
 - **A tag never reaches past its box.** Where the words plus the offsets would cross the box's edge,
   the tag is cut at the edge (a right-aligned title with a small right margin and a wide offset has
